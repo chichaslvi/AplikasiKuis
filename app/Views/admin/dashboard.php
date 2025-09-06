@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Dashboard Admin</title>
+  <title>Hi, Chicha Silvi Aulia</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
@@ -155,7 +155,7 @@
     <ul class="menu">
       <li class="active"><i class="fa-solid fa-house"></i> Beranda</li>
       <li><i class="fa-solid fa-users"></i> Manajemen User</li>
-      <li><i class="fa-solid fa-user-gear"></i> Manajemen Role</li>
+      <li><i class="fa-solid fa-user-gear"></i> Manajemen Kategori</li>
       <li><i class="fa-solid fa-file-lines"></i> Manajemen Soal</li>
       <li><i class="fa-solid fa-chart-column"></i> Report Nilai</li>
       <li><i class="fa-solid fa-right-from-bracket"></i> Logout</li>
