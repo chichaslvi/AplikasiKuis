@@ -15,7 +15,7 @@
       </a>
     </li>
     <li>
-      <a href="<?= base_url('admin/roles/index') ?>">
+      <a href="<?= base_url('admin/roles') ?>">
         <i class="fa-solid fa-user-gear"></i> Manajemen Role
       </a>
     </li>
@@ -30,7 +30,7 @@
       </a>
     </li>
     <li>
-      <a href="<?= base_url('logout') ?>">
+      <a href="<?= base_url('auth/logout') ?>">
         <i class="fa-solid fa-right-from-bracket"></i> Logout
       </a>
     </li>
