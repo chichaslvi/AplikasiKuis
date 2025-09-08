@@ -33,4 +33,5 @@ $routes->group('admin', function($routes) {
     $routes->get('roles', 'RoleController::index');
     $routes->get('soal', 'SoalController::index');
     $routes->get('reports', 'ReportController::index');
+    $routes->get('soal/create', 'SoalController::create');
 });
