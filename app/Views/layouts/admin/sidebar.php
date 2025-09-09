@@ -20,8 +20,8 @@
       </a>
     </li>
     <li>
-      <a href="<?= base_url('admin/soal') ?>">
-        <i class="fa-solid fa-file-lines"></i> Manajemen Soal
+      <a href="<?= base_url('admin/kuis') ?>">
+        <i class="fa-solid fa-file-lines"></i> Manajemen kuis
       </a>
     </li>
     <li>

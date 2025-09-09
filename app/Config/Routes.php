@@ -31,7 +31,8 @@ $routes->group('admin', function($routes) {
     $routes->get('dashboard', 'Dashboard::admin');
     $routes->get('users', 'UserController::index');
     $routes->get('roles', 'RoleController::index');
-    $routes->get('soal', 'SoalController::index');
+    $routes->get('kuis', 'kuisController::index');
     $routes->get('reports', 'ReportController::index');
-    $routes->get('soal/create', 'SoalController::create');
+    $routes->get('kuis/create', 'kuisController::create');
+    $routes->post('kuis/store', 'KuisController::store');
 });

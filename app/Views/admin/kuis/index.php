@@ -1,10 +1,10 @@
 <?= $this->extend('layouts/admin/main') ?>
 
 <?= $this->section('content') ?>
-<link rel="stylesheet" href="<?= base_url('css/admin/soal.css') ?>">
+<link rel="stylesheet" href="<?= base_url('css/admin/kuis.css') ?>">
 <div class="content-wrapper">
     <div class="header-actions">
-        <a href="<?= base_url('admin/soal/create') ?>" class="btn btn-primary">
+        <a href="<?= base_url('admin/kuis/create') ?>" class="btn btn-primary">
             <i class="fa fa-plus"></i> Tambah Kuis
         </a>
     </div>
@@ -13,6 +13,7 @@
         <table class="table-kuis">
             <thead>
                 <tr>
+                    <th>id</th>
                     <th>Nama Kuis</th>
                     <th>Topik</th>
                     <th>Tanggal Pelaksanaan</th>
@@ -27,6 +28,7 @@
             </thead>
             <tbody>
                 <tr>
+                    <td>1</td>
                     <td>Kuis Matematika 1</td>
                     <td>Aljabar</td>
                     <td>10-09-2025</td>
@@ -44,6 +46,7 @@
                     </td>
                 </tr>
                 <tr>
+                    <td>2</td>
                     <td>Kuis Bahasa</td>
                     <td>Tata Bahasa</td>
                     <td>15-09-2025</td>
