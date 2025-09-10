@@ -1,0 +1,159 @@
+.content-wrapper {
+  padding: 20px;
+  font-family: 'Inter', sans-serif;
+}
+
+.header-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 15px;
+}
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.table-kuis {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-kuis th {
+  background-color: #006bb3;
+  color: white;
+  padding: 12px 10px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.table-kuis td {
+  padding: 10px;
+  border-bottom: 1px solid #eaeaea;
+  text-align: center;
+  font-size: 14px;
+}
+
+.table-kuis tbody tr:hover {
+  background-color: #f9fbfd;
+}
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: white;
+}
+
+.badge.active {
+  background: #28a745;
+}
+
+.badge.inactive {
+  background: #6c757d;
+}
+
+/* Aksi button area */
+.actions {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;   /* kalau tombol banyak, bisa discroll horizontal */
+  padding: 5px 0;
+}
+
+.actions .btn {
+  flex: 1;            /* tombol melebar */
+  min-width: 90px;    /* lebar minimum biar rata */
+  font-size: 13px;
+  padding: 6px 0;
+  border-radius: 6px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-upload {
+  background: #17a2b8;
+  color: white;
+}
+.btn-edit {
+  background: #28a745;
+  color: white;
+}
+.btn-delete {
+  background: #dc3545;
+  color: white;
+}
+.btn-archive {
+  background: #343a40;
+  color: white;
+}
+/*tampilan tambah */
+.form-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+        .form-container h2 {
+            margin-bottom: 20px;
+            font-size: 22px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 18px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: #444;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #0066b3;
+            box-shadow: 0 0 4px rgba(0,102,179,0.3);
+        }
+        .btn-submit {
+            background: #0066b3;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-submit:hover {
+            background: #004f8a;
+        }

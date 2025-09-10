@@ -27,7 +27,13 @@ $routes->get('reviewer/dashboard', 'Dashboard::reviewer');
 // ==================
 // Admin Pages (Sidebar Menu)
 // ==================
-$routes->get('admin/users', 'UserController::index');        // Manajemen User
-$routes->get('admin/roles/index', 'RoleController::index');        // Manajemen Role
-$routes->get('admin/soal', 'SoalController::index');         // Manajemen Soal
-$routes->get('admin/reports', 'ReportController::index');    // Report Nilai
+$routes->group('admin', function($routes) {
+    $routes->get('dashboard', 'Dashboard::admin');
+    $routes->get('users', 'UserController::index');
+    $routes->get('roles', 'RoleController::index');
+    $routes->get('kuis', 'kuisController::index');
+    $routes->get('reports', 'ReportController::index');
+    $routes->get('kuis/create', 'kuisController::create');
+    $routes->post('kuis/store', 'KuisController::store');
+});
+
