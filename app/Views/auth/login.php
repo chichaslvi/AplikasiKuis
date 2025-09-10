@@ -185,8 +185,8 @@
 
       <form action="/auth/doLogin" method="post">
         <div class="input-group">
-          <label for="username">Username</label>
-          <input type="text" name="username" id="username" placeholder="Masukkan username" required>
+          <label for="nik">nik</label>
+          <input type="text" name="nik" id="nik" placeholder="Masukkan nik" required>
         </div>
         <div class="input-group">
           <label for="password">Password</label>

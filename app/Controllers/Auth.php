@@ -21,13 +21,13 @@ class Auth extends BaseController
 
     public function doLogin()
     {
-        $username = $this->request->getPost('username');
+        $nik = $this->request->getPost('nik');
         $password = $this->request->getPost('password');
 
-        $user = $this->userModel->where('username', $username)->first();
+        $user = $this->userModel->where('nik', $nik)->first();
 
         if (!$user) {
-            return redirect()->back()->with('error', 'Username tidak ditemukan');
+            return redirect()->back()->with('error', 'nik tidak ditemukan');
         }
 
         if (!password_verify($password, $user['password'])) {
@@ -55,7 +55,7 @@ class Auth extends BaseController
         // 3. Jika valid -> login normal
         session()->set([
             'user_id' => $user['id'],
-            'username' => $user['username'],
+            'nik' => $user['nik'],
             'role' => $user['role'],
             'logged_in' => true
         ]);

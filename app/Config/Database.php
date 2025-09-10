@@ -27,7 +27,7 @@ class Database extends Config
     public array $default = [
         'DSN'          => '',
         'hostname'     => 'localhost',
-        'username'     => '',
+        'nik'     => '',
         'password'     => '',
         'database'     => '',
         'DBDriver'     => 'MySQLi',
@@ -81,7 +81,7 @@ class Database extends Config
     //    public array $default = [
     //        'DSN'        => '',
     //        'hostname'   => 'localhost',
-    //        'username'   => 'root',
+    //        'nik'   => 'root',
     //        'password'   => 'root',
     //        'database'   => 'ci4',
     //        'schema'     => 'public',
@@ -108,7 +108,7 @@ class Database extends Config
     //    public array $default = [
     //        'DSN'        => '',
     //        'hostname'   => 'localhost',
-    //        'username'   => 'root',
+    //        'nik'   => 'root',
     //        'password'   => 'root',
     //        'database'   => 'ci4',
     //        'schema'     => 'dbo',
@@ -141,7 +141,7 @@ class Database extends Config
     //     */
     //    public array $default = [
     //        'DSN'        => 'localhost:1521/XEPDB1',
-    //        'username'   => 'root',
+    //        'nik'   => 'root',
     //        'password'   => 'root',
     //        'DBDriver'   => 'OCI8',
     //        'DBPrefix'   => '',
@@ -165,7 +165,7 @@ class Database extends Config
     public array $tests = [
         'DSN'         => '',
         'hostname'    => '127.0.0.1',
-        'username'    => '',
+        'nik'    => '',
         'password'    => '',
         'database'    => ':memory:',
         'DBDriver'    => 'SQLite3',

@@ -31,7 +31,7 @@ class Email extends BaseConfig
     public string $SMTPHost = '';
 
     /**
-     * SMTP Username
+     * SMTP nik
      */
     public string $SMTPUser = '';
 
