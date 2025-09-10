@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Login | Melisa</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Tambah Font Awesome untuk ikon mata -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * {
       margin: 0;
@@ -93,7 +95,7 @@
     .input-group input {
       width: 100%;
       height: 100%;
-      padding: 28px 10px 10px 15px; 
+      padding: 28px 40px 10px 15px; /* ruang kanan utk ikon */
       border: 1px solid #ccc;
       font-size: 10.45px;
       outline: none;
@@ -116,6 +118,16 @@
     .input-group:last-of-type input {
       border-radius: 0 0 4px 4px;
       border-top: none;
+    }
+
+    /* Ikon toggle password */
+    .toggle-password {
+      position: absolute;
+      top: 50%;
+      right: 12px;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: #666;
     }
 
     button {
@@ -185,12 +197,14 @@
 
       <form action="/auth/doLogin" method="post">
         <div class="input-group">
-          <label for="username">Username</label>
-          <input type="text" name="username" id="username" placeholder="Masukkan username" required>
+          <label for="nik">nik</label>
+          <input type="text" name="nik" id="nik" placeholder="Masukkan nik" required>
         </div>
         <div class="input-group">
           <label for="password">Password</label>
           <input type="password" name="password" id="password" placeholder="Masukkan password" required>
+          <!-- default: mata tertutup -->
+          <i class="fa-solid fa-eye-slash toggle-password" id="togglePassword"></i>
         </div>
         <button type="submit">LOGIN</button>
       </form>
@@ -201,5 +215,17 @@
       <img src="assets/img/ilustrasi.png" alt="Ilustrasi Login">
     </div>
   </div>
+
+  <script>
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    togglePassword.addEventListener('click', () => {
+      const isPassword = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', isPassword ? 'text' : 'password');
+      togglePassword.classList.toggle('fa-eye-slash', !isPassword);
+      togglePassword.classList.toggle('fa-eye', isPassword);
+    });
+  </script>
 </body>
 </html>

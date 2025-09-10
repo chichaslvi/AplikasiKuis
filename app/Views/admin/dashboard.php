@@ -1,85 +1,131 @@
-
 <?= $this->extend('layouts/admin/main') ?>
->>>>>>> 9d8fa08d2da8ac73df952c492a2642df2d95bfc4
 
 <?= $this->section('content') ?>
 <style>
-   /* Profile Card */
+/* Profile Card */
+/* Profile Card */
+/* Profile Card */
+/* Profile Card */
+/* Profile Card */
 .profile-card { 
   background: white; 
-  border-radius: 8px; 
-  padding: 20px; 
+  border-radius: 12px; 
+  padding: 16px 24px; 
   display: flex; 
-  align-items: center; 
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15); 
-  margin-bottom: 40px; 
-  border-top: 8px solid #0070C0; 
-  border-top-left-radius: 8px; 
+  align-items: flex-start;        
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);  /* ✅ shadow lebih halus */
+  margin-bottom: 30px; 
+  border-top: 6px solid #0070C0; 
+  width: fit-content;
+  max-width: 460px;   
+  min-height: 150px;  
 }
+
+
 .profile-card img { 
-  width: 90px; 
-  height: 90px; 
+  width: 85px;                    /* avatar diperkecil */
+  height: 85px; 
   border-radius: 50%; 
   margin-right: 25px; 
 }
+
 .profile-info p { 
-  margin: 8px 0; 
-  font-size: 15px; 
-  border-bottom: 1px solid #ddd; 
+  margin: 14px 0; 
+  font-size: 14px; 
+  line-height: 1.7; 
   padding-bottom: 5px; 
-  width: 250px; 
+  border-bottom: 1px solid #ddd; 
+  width: 220px; 
 }
 
-/* User Stats */
-.stats h2 { 
-  font-size: 20px; 
-  margin-bottom: 20px; 
+.profile-info p:last-child {
+  border-bottom: none;            
 }
+
+/* Stats Section */
+.stats h2 { 
+  font-size: 18px; 
+  margin: 15px 0; 
+}
+
 .stats-cards { 
   display: flex; 
-  gap: 25px; 
+  gap: 18px; 
 }
+
 .stat-card { 
   flex: 1; 
   background: white; 
-  border-radius: 6px; 
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15); 
-  overflow: hidden; 
+  border-radius: 10px; 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);   /* ✅ shadow lebih tegas */
+  text-align: center;
+  width: 120px;    
+  padding: 8px;
+  transition: all 0.3s ease;                /* ✅ smooth animasi */
+  cursor: pointer;                          /* ✅ kursor jadi pointer */
 }
+
+.stat-card:hover {
+  transform: translateY(-6px) scale(1.05);  /* ✅ naik & sedikit membesar */
+  box-shadow: 0 8px 18px rgba(0,0,0,0.25);  /* ✅ shadow makin dalam saat hover */
+}
+
 .stat-card .inner { 
   background: #0070C0; 
   color: white; 
-  text-align: center; 
-  padding: 18px; 
-  font-size: 16px; 
-  font-weight: 600; 
-  border-bottom: 3px solid white; 
+  padding: 12px; 
+  border-radius: 6px; 
 }
+
+.stat-card .number {
+  font-size: 16px;
+  font-weight: bold;
+  padding-bottom: px;
+  border-bottom: 1px solid white;  
+  margin-bottom: 5px;
+}
+
+.stat-card .label {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+
 </style>
 
-<h1>Hi, Chicha Silvi Aulia</h1>
+<h1></h1>
 
-  <div class="profile-card">
-    <img src="https://cdn-icons-png.flaticon.com/512/6997/6997662.png" alt="Avatar">
-    <div class="profile-info">
-      <p><b>Nama</b> &nbsp;&nbsp; Chicha Silvi Aulia</p>
-      <p><b>NIK</b> &nbsp;&nbsp; 22576004</p>
-    </div>
-    
+<!-- Profile Card -->
+<div class="profile-card">
+  <img src="https://cdn-icons-png.flaticon.com/512/6997/6997662.png" alt="Avatar">
+  <div class="profile-info">
+    <p><b>Nama</b> &nbsp;&nbsp; Chicha Silvi Aulia</p>
+    <p><b>NIK</b> &nbsp;&nbsp; 22576004</p>
   </div>
+</div>
 
-  <div class="stats">
-    <h2>Jumlah Pengguna</h2>
-    <div class="stats-cards">
-      <div class="stat-card">
-        <div class="inner">3 Admin</div>
-      </div>
-      <div class="stat-card">
-        <div class="inner">18 Reviewer</div>
-      </div>
-      <div class="stat-card">
-        <div class="inner">25 Peserta</div>
+<!-- User Stats -->
+<div class="stats">
+  <h2>Jumlah Pengguna</h2>
+  <div class="stats-cards">
+    <div class="stat-card">
+      <div class="inner">
+        <div class="number">3</div>
+        <div class="label">Admin</div>
       </div>
     </div>
+    <div class="stat-card">
+      <div class="inner">
+        <div class="number">18</div>
+        <div class="label">Reviewer</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="inner">
+        <div class="number">25</div>
+        <div class="label">Peserta</div>
+      </div>
+    </div>
   </div>
+</div>
 <?= $this->endSection() ?>

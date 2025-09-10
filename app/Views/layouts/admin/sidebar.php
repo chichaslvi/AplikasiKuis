@@ -1,7 +1,7 @@
 <div class="sidebar">
   <div class="logo">
-    <img src="/logo.png" alt="Logo">
-    <h2>Melisa</h2>
+    <img src="assets/img/Logo.png" alt="Melisa Logo" class="logo">
+    <h3></h3>
   </div>
   <ul class="menu">
     <li class="active">
@@ -16,7 +16,7 @@
     </li>
     <li>
       <a href="<?= base_url('admin/roles/index') ?>">
-        <i class="fa-solid fa-user-gear"></i> Manajemen Role
+        <i class="fa-solid fa-user-gear"></i> Manajemen Kategori
       </a>
     </li>
     <li>
@@ -36,3 +36,37 @@
     </li>
   </ul>
 </div>
+
+<style>
+/* Sidebar tetap ukurannya sama persis dengan sebelumnya */
+.sidebar {
+  width: 250px;
+  background: #0070C0; /* warna sidebar */
+  min-height: 100vh;
+  padding: 20px 0;
+}
+
+.sidebar .logo h2 {
+  color: white;
+}
+
+.sidebar .menu li a {
+  color: white;              /* teks putih */
+  text-decoration: none;     /* hilangkan underline */
+}
+
+.sidebar .menu li a i {
+  color: white;              /* ikon putih */
+}
+
+.sidebar .menu li a:hover,
+.sidebar .menu li.active a {
+  background: #005a99;       /* warna hover/active */
+  color: white;
+}
+
+.sidebar .menu li a:hover i,
+.sidebar .menu li.active a i {
+  color: white;
+}
+</style>

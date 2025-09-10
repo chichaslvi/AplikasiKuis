@@ -24,32 +24,33 @@ class Database extends Config
      *
      * @var array<string, mixed>
      */
-    public array $default = [
-        'DSN'          => '',
-        'hostname'     => 'localhost',
-        'username'     => '',
-        'password'     => '',
-        'database'     => '',
-        'DBDriver'     => 'MySQLi',
-        'DBPrefix'     => '',
-        'pConnect'     => false,
-        'DBDebug'      => true,
-        'charset'      => 'utf8mb4',
-        'DBCollat'     => 'utf8mb4_general_ci',
-        'swapPre'      => '',
-        'encrypt'      => false,
-        'compress'     => false,
-        'strictOn'     => false,
-        'failover'     => [],
-        'port'         => 3306,
-        'numberNative' => false,
-        'foundRows'    => false,
-        'dateFormat'   => [
-            'date'     => 'Y-m-d',
-            'datetime' => 'Y-m-d H:i:s',
-            'time'     => 'H:i:s',
-        ],
-    ];
+   public array $default = [
+    'DSN'          => '',
+    'hostname'     => 'localhost',
+    'username'     => 'root',
+    'password'     => '',
+    'database'     => 'appkuis',
+    'DBDriver'     => 'MySQLi',
+    'DBPrefix'     => '',
+    'pConnect'     => false,
+    'DBDebug'      => true,
+    'charset'      => 'utf8mb4',
+    'DBCollat'     => 'utf8mb4_general_ci',
+    'swapPre'      => '',
+    'encrypt'      => false,
+    'compress'     => false,
+    'strictOn'     => false,
+    'failover'     => [],
+    'port'         => 3306,
+    'numberNative' => false,
+    'foundRows'    => false,
+    'dateFormat'   => [
+        'date'     => 'Y-m-d',
+        'datetime' => 'Y-m-d H:i:s',
+        'time'     => 'H:i:s',
+    ],
+];
+
 
     //    /**
     //     * Sample database connection for SQLite3.
@@ -81,7 +82,7 @@ class Database extends Config
     //    public array $default = [
     //        'DSN'        => '',
     //        'hostname'   => 'localhost',
-    //        'username'   => 'root',
+    //        'nik'   => 'root',
     //        'password'   => 'root',
     //        'database'   => 'ci4',
     //        'schema'     => 'public',
@@ -108,7 +109,7 @@ class Database extends Config
     //    public array $default = [
     //        'DSN'        => '',
     //        'hostname'   => 'localhost',
-    //        'username'   => 'root',
+    //        'nik'   => 'root',
     //        'password'   => 'root',
     //        'database'   => 'ci4',
     //        'schema'     => 'dbo',
@@ -141,7 +142,7 @@ class Database extends Config
     //     */
     //    public array $default = [
     //        'DSN'        => 'localhost:1521/XEPDB1',
-    //        'username'   => 'root',
+    //        'nik'   => 'root',
     //        'password'   => 'root',
     //        'DBDriver'   => 'OCI8',
     //        'DBPrefix'   => '',
@@ -165,7 +166,7 @@ class Database extends Config
     public array $tests = [
         'DSN'         => '',
         'hostname'    => '127.0.0.1',
-        'username'    => '',
+        'nik'    => '',
         'password'    => '',
         'database'    => ':memory:',
         'DBDriver'    => 'SQLite3',
