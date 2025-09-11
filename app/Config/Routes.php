@@ -26,7 +26,7 @@ $routes->group('admin', function($routes) {
     $routes->get('kuis', 'KuisController::index');
     $routes->get('reports', 'ReportController::index');
     $routes->get('kuis/create', 'KuisController::create');
-    $routes->post('kuis/store', 'KuisController::store');
+    $routes->post('kuis/store_kuis', 'KuisController::store_kuis');
 
     // Tambah Admin & Reviewer
     $routes->get('users/create_admin', 'UserController::create_admin'); // form tambah
