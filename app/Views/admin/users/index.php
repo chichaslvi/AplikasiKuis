@@ -8,9 +8,9 @@
 
   <!-- Tombol Aksi -->
   <div class="actions">
-    <button class="btn btn-blue">+ Tambah Akun Admin & Reviewer</button>
-    <button class="btn btn-blue">+ Tambah Akun Agent</button>
-    <select class="filter-role">
+    <a href="<?= base_url('admin/users/create_admin') ?>" class="btn btn-blue">+ Tambah Akun Admin & Reviewer</a>
+    <a href="<?= base_url('admin/users/create_agent') ?>" class="btn btn-blue">+ Tambah Akun Agent</a>
+    <select class="filter-role" onchange="filterRole(this.value)">
       <option value="">-- Filter Role --</option>
       <option value="admin">Admin</option>
       <option value="reviewer">Reviewer</option>
@@ -20,6 +20,14 @@
 
   <!-- Card berisi tabel -->
   <div class="card">
+
+    <!-- Alert sukses -->
+    <?php if (session()->getFlashdata('success')): ?>
+      <div class="alert-success">
+        <?= session()->getFlashdata('success') ?>
+      </div>
+    <?php endif; ?>
+
     <table class="table-user">
       <thead>
         <tr>
@@ -34,32 +42,27 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>1</td>
-          <td>Rido</td>
-          <td>26372</td>
-          <td>@infomedia</td>
-          <td>Admin</td>
-          <td>-</td>
-          <td>-</td>
-          <td>
-            <button class="btn btn-green btn-sm">EDIT</button>
-            <button class="btn btn-red btn-sm">HAPUS</button>
-          </td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>Rina</td>
-          <td>26483</td>
-          <td>@infomedia</td>
-          <td>Agent</td>
-          <td>Agent Voice</td>
-          <td>Hasan</td>
-          <td>
-            <button class="btn btn-green btn-sm">EDIT</button>
-            <button class="btn btn-red btn-sm">HAPUS</button>
-          </td>
-        </tr>
+        <?php if (!empty($users)) : ?>
+          <?php foreach ($users as $u) : ?>
+            <tr>
+              <td><?= esc($u['id']) ?></td>
+              <td><?= esc($u['nama']) ?></td>
+              <td><?= esc($u['nik']) ?></td>
+              <td><?= esc($u['password']) ?></td>
+              <td><?= esc($u['role']) ?></td>
+              <td><?= esc($u['kategori_agent'] ?? '-') ?></td>
+              <td><?= esc($u['team_leader'] ?? '-') ?></td>
+              <td>
+                <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-green btn-sm">EDIT</a>
+                <a href="<?= base_url('admin/users/delete/' . $u['id']) ?>" class="btn btn-red btn-sm" onclick="return confirm('Yakin hapus user ini?')">HAPUS</a>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        <?php else : ?>
+          <tr>
+            <td colspan="8">Belum ada data user.</td>
+          </tr>
+        <?php endif; ?>
       </tbody>
     </table>
   </div>
@@ -97,6 +100,8 @@
   margin-right: 6px;
   font-weight: 500;
   transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
 }
 .btn-blue { background: #0070C0; color: white; }
 .btn-green { background: #28a745; color: white; }
@@ -144,5 +149,27 @@
 .table-user tbody tr:hover {
   background: #f0f8ff;
 }
+
+/* Alert sukses */
+.alert-success {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
 </style>
+
+<script>
+  // Filter role sederhana (nanti bisa diproses pakai query di controller)
+  function filterRole(role) {
+    if (role) {
+      window.location.href = "<?= base_url('admin/users?role=') ?>" + role;
+    } else {
+      window.location.href = "<?= base_url('admin/users') ?>";
+    }
+  }
+</script>
 <?= $this->endSection() ?>
