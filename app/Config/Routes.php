@@ -33,8 +33,16 @@ $routes->group('admin', function($routes) {
     $routes->post('users/store_admin', 'UserController::store_admin'); // simpan data
 
     // Tambah Agent
-$routes->get('users/create_agent', 'UserController::create_agent'); // form tambah agent
-$routes->post('users/store_agent', 'UserController::store_agent');  // simpan agent
+    $routes->get('users/create_agent', 'UserController::create_agent'); // form tambah agent
+    $routes->post('users/store_agent', 'UserController::store_agent');  // simpan agent
+
+    // Edit, Update & Delete User
+    $routes->get('users/edit/(:num)', 'UserController::edit/$1');
+    $routes->post('users/update/(:num)', 'UserController::update/$1'); // route update
+    $routes->get('users/delete/(:num)', 'UserController::delete/$1');
+
+    // Filter berdasarkan role
+    $routes->get('users/role/(:alpha)', 'UserController::index/$1');
 
     // Redirect roles/index
     $routes->get('roles/index', function () {

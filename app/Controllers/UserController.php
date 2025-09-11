@@ -10,9 +10,20 @@ class UserController extends BaseController
     public function index()
     {
         $userModel = new UserModel();
-        $users = $userModel->findAll(); // ambil semua user dari database
 
-        return view('admin/users/index', ['users' => $users]); 
+        // cek apakah ada filter role
+        $role = $this->request->getGet('role');
+
+        if ($role) {
+            $users = $userModel->where('role', $role)->findAll();
+        } else {
+            $users = $userModel->findAll(); // ambil semua user dari database
+        }
+
+        return view('admin/users/index', [
+            'users' => $users,
+            'selectedRole' => $role
+        ]);
     }
 
     // Menampilkan form tambah admin & reviewer
@@ -81,5 +92,59 @@ class UserController extends BaseController
         $userModel->insert($data);
 
         return redirect()->to('/admin/users')->with('success', 'Akun Agent berhasil ditambahkan!');
+    }
+
+    // Menampilkan form edit user
+    public function edit($id)
+    {
+        $userModel = new UserModel();
+        $user = $userModel->find($id);
+
+        if (!$user) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException("User dengan ID $id tidak ditemukan");
+        }
+
+        return view('admin/users/edit', ['user' => $user]);
+    }
+
+    // Proses update user
+    public function update($id)
+    {
+        $userModel = new UserModel();
+        $user = $userModel->find($id);
+
+        if (!$user) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException("User dengan ID $id tidak ditemukan");
+        }
+
+        $data = [
+            'nama' => $this->request->getPost('nama'),
+            'nik'  => $this->request->getPost('nik'),
+            'role' => $this->request->getPost('role'),
+        ];
+
+        // Update password hanya jika diisi
+        if ($this->request->getPost('password')) {
+            $data['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
+        }
+
+        // Jika role agent, update tambahan
+        if ($user['role'] === 'agent') {
+            $data['kategori_agent'] = $this->request->getPost('kategori_agent');
+            $data['team_leader']    = $this->request->getPost('team_leader');
+        }
+
+        $userModel->update($id, $data);
+
+        return redirect()->to('/admin/users')->with('success', 'User berhasil diperbarui!');
+    }
+
+    // Proses hapus user
+    public function delete($id)
+    {
+        $userModel = new UserModel();
+        $userModel->delete($id);
+
+        return redirect()->to('/admin/users')->with('success', 'User berhasil dihapus!');
     }
 }

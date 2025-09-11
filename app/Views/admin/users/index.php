@@ -12,9 +12,9 @@
     <a href="<?= base_url('admin/users/create_agent') ?>" class="btn btn-blue">+ Tambah Akun Agent</a>
     <select class="filter-role" onchange="filterRole(this.value)">
       <option value="">-- Filter Role --</option>
-      <option value="admin">Admin</option>
-      <option value="reviewer">Reviewer</option>
-      <option value="agent">Agent</option>
+      <option value="admin" <?= ($selectedRole === 'admin') ? 'selected' : '' ?>>Admin</option>
+      <option value="reviewer" <?= ($selectedRole === 'reviewer') ? 'selected' : '' ?>>Reviewer</option>
+      <option value="agent" <?= ($selectedRole === 'agent') ? 'selected' : '' ?>>Agent</option>
     </select>
   </div>
 
@@ -163,7 +163,7 @@
 </style>
 
 <script>
-  // Filter role sederhana (nanti bisa diproses pakai query di controller)
+  // Filter role sederhana
   function filterRole(role) {
     if (role) {
       window.location.href = "<?= base_url('admin/users?role=') ?>" + role;
