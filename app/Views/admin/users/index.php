@@ -43,17 +43,22 @@
       </thead>
       <tbody>
         <?php if (!empty($users)) : ?>
+          <?php $no = 1; // Counter untuk id berurutan ?>
           <?php foreach ($users as $u) : ?>
             <tr>
-              <td><?= esc($u['id']) ?></td>
+              <td><?= $no++ ?></td> <!-- ID berurutan -->
               <td><?= esc($u['nama']) ?></td>
               <td><?= esc($u['nik']) ?></td>
-              <td><?= esc($u['password']) ?></td>
+              <td><?= str_repeat('*', 8) ?></td>
               <td><?= esc($u['role']) ?></td>
-              <td><?= esc($u['kategori_agent'] ?? '-') ?></td>
-              <td><?= esc($u['team_leader'] ?? '-') ?></td>
-              <td>
-                <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-green btn-sm">EDIT</a>
+              <td><?= esc($u['nama_kategori'] ?? '-') ?></td>
+              <td><?= esc($u['nama_team_leader'] ?? '-') ?></td>
+              <td class="action-buttons">
+                <?php if ($u['role'] === 'agent'): ?>
+                    <a href="<?= base_url('admin/users/edit_agent/' . $u['id']) ?>" class="btn btn-green btn-sm">EDIT</a>
+                <?php else: ?>
+                    <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-green btn-sm">EDIT</a>
+                <?php endif; ?>
                 <a href="<?= base_url('admin/users/delete/' . $u['id']) ?>" class="btn btn-red btn-sm" onclick="return confirm('Yakin hapus user ini?')">HAPUS</a>
               </td>
             </tr>
@@ -148,6 +153,13 @@
 }
 .table-user tbody tr:hover {
   background: #f0f8ff;
+}
+
+/* Kolom Aksi tombol sejajar */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 5px; /* Jarak antar tombol */
 }
 
 /* Alert sukses */

@@ -123,7 +123,7 @@
     <div class="stat-card">
       <div class="inner">
         <div class="number">25</div>
-        <div class="label">Peserta</div>
+        <div class="label">Agent</div>
       </div>
     </div>
   </div>

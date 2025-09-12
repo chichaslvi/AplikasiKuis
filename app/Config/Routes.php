@@ -41,6 +41,10 @@ $routes->group('admin', function($routes) {
     $routes->post('users/update/(:num)', 'UserController::update/$1'); // route update
     $routes->get('users/delete/(:num)', 'UserController::delete/$1');
 
+    // **Tambahkan route khusus agent**
+    $routes->get('users/edit_agent/(:num)', 'UserController::edit_agent/$1');
+    $routes->post('users/update_agent/(:num)', 'UserController::update_agent/$1');
+
     // Filter berdasarkan role
     $routes->get('users/role/(:alpha)', 'UserController::index/$1');
 

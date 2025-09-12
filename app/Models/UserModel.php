@@ -13,8 +13,14 @@ class UserModel extends Model
         'nik',
         'password',
         'role',
+        'kategori_agent_id',   // ✅ ditambahkan
+        'team_leader_id',      // ✅ ditambahkan
         'must_change_password',
         'last_password_change',
-        'created_at', 'updated_at'
+        'created_at', 
+        'updated_at'
     ];
+
+    // ✅ Biar otomatis isi created_at & updated_at
+    protected $useTimestamps = true;
 }

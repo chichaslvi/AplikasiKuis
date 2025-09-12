@@ -35,13 +35,23 @@
       </div>
 
       <div class="form-group">
-        <label for="kategori_agent">Kategori Agent</label>
-        <input type="text" id="kategori_agent" name="kategori_agent" class="form-control" placeholder="Misal: Agent Voice, Agent Chat" required>
+        <label for="kategori_agent_id">Kategori Agent</label>
+        <select id="kategori_agent_id" name="kategori_agent_id" class="form-control" required>
+          <option value="">-- Pilih Kategori Agent --</option>
+          <?php foreach ($kategoriAgent as $ka): ?>
+            <option value="<?= $ka['id_kategori'] ?>"><?= esc($ka['nama_kategori']) ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
 
       <div class="form-group">
-        <label for="team_leader">Nama TL</label>
-        <input type="text" id="team_leader" name="team_leader" class="form-control" required>
+        <label for="team_leader_id">Nama TL</label>
+        <select id="team_leader_id" name="team_leader_id" class="form-control" required>
+          <option value="">-- Pilih Team Leader --</option>
+          <?php foreach ($teamLeaders as $tl): ?>
+            <option value="<?= $tl['id'] ?>"><?= esc($tl['nama']) ?></option>
+          <?php endforeach; ?>
+        </select>
       </div>
 
       <div class="form-actions">

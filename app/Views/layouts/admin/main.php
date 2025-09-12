@@ -22,5 +22,35 @@
     <?= $this->renderSection('content') ?>
   </div>
 
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <?php if(session()->getFlashdata('success')): ?>
+  <script>
+    Swal.fire({
+      icon: 'success',
+      title: '<?= session()->getFlashdata('success') ?>',
+      showConfirmButton: true,
+      confirmButtonText: 'OK',
+      allowOutsideClick: false
+    })
+  </script>
+  <?php endif; ?>
+
+  <?php if(session()->getFlashdata('errors')): ?>
+  <script>
+    Swal.fire({
+      icon: 'error',
+      title: 'Terjadi Kesalahan',
+      html: `
+        <?php foreach((array) session()->getFlashdata('errors') as $error): ?>
+          <p><?= $error ?></p>
+        <?php endforeach; ?>
+      `,
+      confirmButtonText: 'Coba Lagi'
+    })
+  </script>
+  <?php endif; ?>
+
 </body>
 </html>

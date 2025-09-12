@@ -22,39 +22,51 @@
 
       <!-- Password dengan toggle -->
       <div class="form-group">
-  <label for="password">Password <small>(isi jika ingin ganti)</small></label>
-  <div class="password-wrapper">
-    <input type="password" id="password" name="password" class="form-control" placeholder="Kosongkan jika tidak ingin ganti password">
-    <span id="togglePassword" class="toggle-password">
-      <i class="fa-solid fa-eye-slash"></i>
-    </span>
-  </div>
-</div>
-
+        <label for="password">Password <small>(isi jika ingin ganti)</small></label>
+        <div class="password-wrapper">
+          <input type="password" id="password" name="password" class="form-control" placeholder="Kosongkan jika tidak ingin ganti password">
+          <span id="togglePassword" class="toggle-password">
+            <i class="fa-solid fa-eye-slash"></i>
+          </span>
+        </div>
+      </div>
 
       <div class="form-group">
         <label for="role">Role</label>
         <select id="role" name="role" class="form-control" required>
           <option value="admin" <?= $user['role'] === 'admin' ? 'selected' : '' ?>>Admin</option>
           <option value="reviewer" <?= $user['role'] === 'reviewer' ? 'selected' : '' ?>>Reviewer</option>
-          <option value="agent" <?= $user['role'] === 'agent' ? 'selected' : '' ?>>Agent</option>
         </select>
       </div>
 
       <?php if ($user['role'] === 'agent') : ?>
       <div class="form-group">
-        <label for="kategori_agent">Kategori Agent</label>
-        <input type="text" id="kategori_agent" name="kategori_agent" value="<?= esc($user['kategori_agent']) ?>" class="form-control">
+        <label for="kategori_agent_id">Kategori Agent</label>
+        <select id="kategori_agent_id" name="kategori_agent_id" class="form-control" required>
+          <option value="">-- Pilih Kategori Agent --</option>
+          <?php foreach ($kategoriAgent as $ka): ?>
+            <option value="<?= $ka['id_kategori'] ?>" <?= $user['kategori_agent_id'] == $ka['id_kategori'] ? 'selected' : '' ?>>
+              <?= esc($ka['nama_kategori']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
       </div>
 
       <div class="form-group">
-        <label for="team_leader">Nama Team Leader</label>
-        <input type="text" id="team_leader" name="team_leader" value="<?= esc($user['team_leader']) ?>" class="form-control">
+        <label for="team_leader_id">Nama Team Leader</label>
+        <select id="team_leader_id" name="team_leader_id" class="form-control" required>
+          <option value="">-- Pilih Team Leader --</option>
+          <?php foreach ($teamLeaders as $tl): ?>
+            <option value="<?= $tl['id'] ?>" <?= $user['team_leader_id'] == $tl['id'] ? 'selected' : '' ?>>
+              <?= esc($tl['nama']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
       </div>
       <?php endif; ?>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-green">SIMPAN</button>
+        <button type="submit" class="btn btn-green">Update</button>
         <a href="<?= base_url('admin/users') ?>" class="btn btn-blue">BATAL</a>
       </div>
     </form>
@@ -91,7 +103,6 @@ togglePassword.addEventListener('click', () => {
   icon.classList.toggle('fa-eye', isPassword);
   icon.classList.toggle('fa-eye-slash', !isPassword);
 });
-
 </script>
 
 <?= $this->endSection() ?>
