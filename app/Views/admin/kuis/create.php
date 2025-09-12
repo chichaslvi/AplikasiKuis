@@ -25,27 +25,52 @@
         <input type="text" id="tanggal_pelaksanaan" name="tanggal_pelaksanaan" class="form-control" required readonly>
       </div>
 
+       <div class="form-group">
+        <label for="waktu_mulai">waktu_mulai</label>
+        <input type="text" id="waktu_mulai" name="waktu_mulai" class="form-control" required>
+      </div>
+      
       <div class="form-group">
-        <label for="nik">NIK</label>
-        <input type="text" id="nik" name="nik" class="form-control" required>
+        <label for="waktu_selesai">waktu_selesai</label>
+        <input type="text" id="waktu_selesai" name="waktu_selesai" class="form-control" required>
       </div>
 
       <div class="form-group">
-  <label for="id_kategori">Kategori</label>
-  <select id="id_kategori" name="id_kategori[]" class="form-control" multiple required>
-    <?php foreach ($kategori as $row): ?>
-      <option value="<?= $row['id_kategori'] ?>"><?= $row['nama_kategori'] ?></option>
-    <?php endforeach; ?>
-  </select>
-  <small>Gunakan Ctrl (Windows) / Cmd (Mac) untuk pilih lebih dari satu</small>
-</div>
+        <label for="nilai_minimum">nilai_minimum</label>
+        <input type="int" id="nilai_minimum" name="nilai_minimum" class="form-control" required>
+      </div>
 
+      <div class="form-group">
+        <label for="batas_pengulangan">batas_pengulangan</label>
+        <input type="int" id="batas_pengulangan" name="batas_pengulangan" class="form-control" required>
+      </div>
+
+      <!-- Kategori pakai checkbox + pilih semua -->
+      <div class="form-group">
+        <label for="id_kategori">Kategori</label>
+        <div>
+          <label>
+            <input type="checkbox" id="checkAll"> <strong>Pilih Semua</strong>
+          </label>
+        </div>
+        <?php foreach ($kategori as $row): ?>
+          <div>
+            <label>
+              <input type="checkbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>">
+              <?= $row['nama_kategori'] ?>
+            </label>
+          </div>
+        <?php endforeach; ?>
+      </div>
 
       <div class="form-group import-excel">  
-        <label>Import kuis dari Excel</label>  
-        <input type="file" name="file_excel" accept=".xls,.xlsx">  
-        <small>Format file: .xls atau .xlsx</small>
-      </div>
+  <div class="import-box">
+    <label>Import kuis dari Excel</label>  
+    <input type="file" name="file_excel" accept=".xls,.xlsx">  
+    <small>Format file: .xls atau .xlsx</small>
+  </div>
+</div>
+
 
       <div class="form-actions">
         <button type="submit" class="btn btn-green">SIMPAN</button>
@@ -55,11 +80,26 @@
   </div>
 </div>
 
+
 <!-- Flatpickr CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
 
 <style>
+  /* Import Excel Box */
+.import-box {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  padding: 15px;
+  margin-top: 10px;
+}
+.import-box label {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
 /* Card + form styles (tetap) */
 .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0px 3px 6px rgba(0,0,0,0.08); margin-top: 20px; width: 100%; max-width: 600px; }
 .page-header h2 { margin: 0 0 15px 0; font-size: 22px; font-weight: 600; color: #333; }
@@ -165,7 +205,12 @@ flatpickr("#tanggal_pelaksanaan", {
     new confirmDatePlugin({ confirmText: "Done" })
   ]
 });
+
+// Pilih Semua checkbox
+document.getElementById('checkAll').addEventListener('change', function() {
+  const checkboxes = document.querySelectorAll('input[name="id_kategori[]"]');
+  checkboxes.forEach(cb => cb.checked = this.checked);
+});
 </script>
 
 <?= $this->endSection() ?>
-  
