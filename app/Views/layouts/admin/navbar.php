@@ -1,6 +1,13 @@
-<div class="navbar">
-  <p>Hi, Chicha Silvi Aulia</p>
-</div>
+<nav class="navbar">
+  <div class="navbar-left">
+    <!-- isi kiri navbar -->
+  </div>
+
+  <div class="navbar-right">
+    <span class="navbar-user">Hi, <?= session()->get('nama') ?? 'User' ?></span>
+  </div>
+</nav>
+
 
 <style>
 /* Navbar */

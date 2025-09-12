@@ -1,4 +1,4 @@
-<?php
+<?php 
 
 namespace App\Controllers;
 
@@ -27,7 +27,7 @@ class Auth extends BaseController
         $user = $this->userModel->where('nik', $nik)->first();
 
         if (!$user) {
-            return redirect()->back()->with('error', 'nik tidak ditemukan');
+            return redirect()->back()->with('error', 'NIK tidak ditemukan');
         }
 
         if (!password_verify($password, $user['password'])) {
@@ -54,25 +54,24 @@ class Auth extends BaseController
 
         // 3. Jika valid -> login normal
         session()->set([
-            'user_id' => $user['id'],
-            'nik' => $user['nik'],
-            'role' => $user['role'],
-            'logged_in' => true
+            'user_id'    => $user['id'],
+            'nama'       => $user['nama'],   // <--- simpan nama user
+            'nik'        => $user['nik'],    // <--- simpan NIK user
+            'role'       => $user['role'],
+            'isLoggedIn' => true             // konsisten dengan penamaan awal
         ]);
 
         // Redirect sesuai role
-switch ($user['role']) {
-    case 'Admin':
-        return redirect()->to('/admin/dashboard');
-    case 'Reviewer':
-        return redirect()->to('/reviewer/dashboard');
-    case 'Agent':
-        return redirect()->to('/agent/dashboard');
-    default:
-        return redirect()->to('/')->with('error', 'Role tidak dikenal');
-}
-
-        return redirect()->to('/dashboard/' . strtolower($user['role']));
+        switch (strtolower($user['role'])) {
+            case 'admin':
+                return redirect()->to('/admin/dashboard');
+            case 'reviewer':
+                return redirect()->to('/reviewer/dashboard');
+            case 'agent':
+                return redirect()->to('/agent/dashboard');
+            default:
+                return redirect()->to('/')->with('error', 'Role tidak dikenal');
+        }
     }
 
     public function changePassword()
@@ -91,7 +90,7 @@ switch ($user['role']) {
         }
 
         $this->userModel->update($userId, [
-            'password' => password_hash($newPass, PASSWORD_DEFAULT),
+            'password'             => password_hash($newPass, PASSWORD_DEFAULT),
             'must_change_password' => false,
             'last_password_change' => date('Y-m-d H:i:s')
         ]);
