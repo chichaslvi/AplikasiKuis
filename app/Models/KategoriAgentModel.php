@@ -12,7 +12,4 @@ class KategoriAgentModel extends Model
         'nama_kategori',
         'deskripsi'
     ];
-
-    // optional: aktifkan timestamps kalau tabelmu ada created_at / updated_at
-    // protected $useTimestamps = true;
 }

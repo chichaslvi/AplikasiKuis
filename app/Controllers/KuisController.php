@@ -25,6 +25,9 @@ class KuisController extends BaseController
     {
         $kuisModel = new KuisModel();
 
+        // ambil kategori multiple (array)
+        $kategori = $this->request->getPost('id_kategori');
+
         $data = [
             'nama_kuis'         => $this->request->getPost('nama_kuis'),
             'topik'             => $this->request->getPost('topik'),
@@ -33,7 +36,8 @@ class KuisController extends BaseController
             'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
             'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
             'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-            'id_kategori'       => $this->request->getPost('id_kategori'),
+            // simpan kategori sebagai string "1,3,5"
+            'id_kategori'       => is_array($kategori) ? implode(',', $kategori) : $kategori,
         ];
 
         $kuisModel->insert($data);
