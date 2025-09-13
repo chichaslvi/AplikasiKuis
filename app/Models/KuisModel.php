@@ -1,30 +1,22 @@
 <?php
 
 namespace App\Models;
+
 use CodeIgniter\Model;
 
 class KuisModel extends Model
 {
-    protected $table = 'kuis';
-    protected $primaryKey = 'id_kuis';
-
+    protected $table      = 'kuis';
+    protected $primaryKey = 'id';
     protected $allowedFields = [
-        'id_kategori',
-        'nama_kuis',
-        'topik',
-        'tanggal',
-        'waktu_mulai',
+        'nama_kuis', 
+        'topik', 
+        'tanggal', 
+        'waktu_mulai', 
         'waktu_selesai',
-        'nilai_minimum',
-        'kategori_agent',
-        'batas_pengulangan'
+        'nilai_minimum', 
+        'batas_pengulangan', 
+        'id_kategori',
+        'status'
     ];
-
-    // Ambil data kuis beserta kategori
-    public function getKuisWithKategori()
-    {
-        return $this->select('kuis.*, kategori_agent.nama_kategori, kategori_agent.deskripsi')
-                    ->join('kategori_agent', 'kategori_agent.id_kategori = kuis.id_kategori')
-                    ->findAll();
-    }
 }

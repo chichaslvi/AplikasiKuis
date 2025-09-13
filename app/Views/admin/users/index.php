@@ -108,10 +108,21 @@
   text-decoration: none;
   display: inline-block;
 }
-.btn-blue { background: #0070C0; color: white; }
-.btn-green { background: #28a745; color: white; }
-.btn-red { background: #dc3545; color: white; }
-.btn:hover { opacity: 0.9; transform: scale(1.05); }
+.btn-blue { 
+  background: #0070C0; 
+  color: white; }
+
+.btn-green { 
+  background: #28a745; 
+  color: white; }
+
+.btn-red { 
+  background: #dc3545; 
+  color: white; }
+
+.btn:hover { o
+  pacity: 0.9; 
+  transform: scale(1.05); }
 
 /* Tombol kecil untuk tabel */
 .btn-sm {

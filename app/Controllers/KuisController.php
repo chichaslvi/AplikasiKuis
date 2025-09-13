@@ -9,9 +9,13 @@ use App\Models\KategoriAgentModel;
 class KuisController extends BaseController
 {
     public function index()
-    {
-        return view('admin/kuis/index'); 
-    }
+{
+    $kuisModel = new \App\Models\KuisModel();
+    $data['kuis'] = $kuisModel->findAll();
+
+    return view('admin/kuis/index', $data); 
+}
+
 
     public function create()
     {
@@ -21,7 +25,7 @@ class KuisController extends BaseController
         return view('admin/kuis/create', $data);
     }
 
-    public function store()
+    public function store_kuis()
     {
         $kuisModel = new KuisModel();
 
@@ -31,7 +35,8 @@ class KuisController extends BaseController
         $data = [
             'nama_kuis'         => $this->request->getPost('nama_kuis'),
             'topik'             => $this->request->getPost('topik'),
-            'tanggal'           => $this->request->getPost('tanggal'),
+            // samakan dengan "name" di form (tanggal_pelaksanaan)
+            'tanggal'           => $this->request->getPost('tanggal_pelaksanaan'),
             'waktu_mulai'       => $this->request->getPost('waktu_mulai'),
             'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
             'nilai_minimum'     => $this->request->getPost('nilai_minimum'),

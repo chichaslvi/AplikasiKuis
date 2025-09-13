@@ -13,7 +13,7 @@
         <table class="table-kuis">
             <thead>
                 <tr>
-                    <th>id</th>
+                    <th>ID</th>
                     <th>Nama Kuis</th>
                     <th>Topik</th>
                     <th>Tanggal Pelaksanaan</th>
@@ -27,42 +27,38 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>1</td>
-                    <td>Kuis Matematika 1</td>
-                    <td>Aljabar</td>
-                    <td>10-09-2025</td>
-                    <td>08:00</td>
-                    <td>09:00</td>
-                    <td>70</td>
-                    <td>2</td>
-                    <td>Junior Agent</td>
-                    <td><span class="badge inactive">Inactive</span></td>
-                    <td class="actions">
-                        <button class="btn btn-upload">Upload</button>
-                        <button class="btn btn-edit">Edit</button>
-                        <button class="btn btn-delete">Hapus</button>
-                        <button class="btn btn-archive">Archive</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>2</td>
-                    <td>Kuis Bahasa</td>
-                    <td>Tata Bahasa</td>
-                    <td>15-09-2025</td>
-                    <td>10:00</td>
-                    <td>11:00</td>
-                    <td>60</td>
-                    <td>1</td>
-                    <td>Senior Agent</td>
-                    <td><span class="badge active">Active</span></td>
-                    <td class="actions">
-                        <button class="btn btn-upload">Upload</button>
-                        <button class="btn btn-edit">Edit</button>
-                        <button class="btn btn-delete">Hapus</button>
-                        <button class="btn btn-archive">Archive</button>
-                    </td>
-                </tr>
+                <?php if (!empty($kuis)) : ?>
+                    <?php foreach ($kuis as $row) : ?>
+                        <tr>
+                            <td><?= $row['id_kuis'] ?></td>
+                            <td><?= esc($row['nama_kuis']) ?></td>
+                            <td><?= esc($row['topik']) ?></td>
+                            <td><?= esc($row['tanggal']) ?></td>
+                            <td><?= esc($row['waktu_mulai']) ?></td>
+                            <td><?= esc($row['waktu_selesai']) ?></td>
+                            <td><?= esc($row['nilai_minimum']) ?></td>
+                            <td><?= esc($row['batas_pengulangan']) ?></td>
+                            <td><?= esc($row['id_kategori']) ?></td>
+                            <td>
+                                <?php if (isset($row['status']) && $row['status'] == 'active') : ?>
+                                    <span class="badge active">Active</span>
+                                <?php else : ?>
+                                    <span class="badge inactive">Inactive</span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="actions">
+                                <button class="btn btn-upload">Upload</button>
+                                <button class="btn btn-edit">Edit</button>
+                                <button class="btn btn-delete">Hapus</button>
+                                <button class="btn btn-archive">Archive</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else : ?>
+                    <tr>
+                        <td colspan="11" style="text-align:center;">Belum ada data kuis</td>
+                    </tr>
+                <?php endif; ?>
             </tbody>
         </table>
     </div>

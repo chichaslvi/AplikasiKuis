@@ -29,7 +29,10 @@ $routes->group('admin', function($routes) {
     $routes->post('kuis/store_kuis', 'KuisController::store_kuis');
     $routes->post('kuis/import_excel', 'SoalController::import_excel');
 
+<<<<<<< Updated upstream
     
+=======
+>>>>>>> Stashed changes
 
     // Tambah Admin & Reviewer
     $routes->get('users/create_admin', 'UserController::create_admin'); // form tambah
