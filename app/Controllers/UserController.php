@@ -12,7 +12,7 @@ class UserController extends BaseController
         $db = \Config\Database::connect();
 
         $builder = $db->table('users u')
-            ->select('u.*, ka.nama_kategori, tl.nama as nama_team_leader')
+            ->select('u.*, ka.nama_kategori, tl.nama as nama')
             ->join('kategori_agent ka', 'ka.id_kategori = u.kategori_agent_id', 'left')
             ->join('team_leader tl', 'tl.id = u.team_leader_id', 'left');
 

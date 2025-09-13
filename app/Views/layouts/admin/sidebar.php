@@ -2,9 +2,10 @@
 
 <div class="sidebar">
   <div class="logo">
-    <img src="assets/img/Logo.png" alt="Melisa Logo" class="logo">
-    <h3></h3>
-  </div>
+  <img src="<?= base_url('assets/img/Logo.png') ?>" alt="Melisa Logo" class="logo-img">
+  <h3></h3>
+</div>
+
   <ul class="menu">
     <li class="<?= $uri->getSegment(2) === 'dashboard' ? 'active' : '' ?>">
       <a href="<?= base_url('admin/dashboard') ?>">
@@ -46,6 +47,14 @@
   background: #0070C0; /* warna sidebar */
   min-height: 100vh;
   padding: 20px 0;
+}
+
+/* Logo full */
+.logo-full {
+  width: 100% !important;   /* paksa selebar sidebar */
+  height: auto !important;  /* proporsional */
+  display: block;
+  margin: 0 auto 20px auto;
 }
 
 .sidebar .logo h2 {

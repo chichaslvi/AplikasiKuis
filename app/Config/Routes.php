@@ -27,6 +27,9 @@ $routes->group('admin', function($routes) {
     $routes->get('reports', 'ReportController::index');
     $routes->get('kuis/create', 'KuisController::create');
     $routes->post('kuis/store_kuis', 'KuisController::store_kuis');
+    $routes->post('kuis/import_excel', 'SoalController::import_excel');
+
+    
 
     // Tambah Admin & Reviewer
     $routes->get('users/create_admin', 'UserController::create_admin'); // form tambah
@@ -52,4 +55,18 @@ $routes->group('admin', function($routes) {
     $routes->get('roles/index', function () {
         return redirect()->to('/admin/roles');
     });
+
+    // 👉 Tambahan baru untuk RoleController
+   // 👉 Tambahan baru untuk RoleController
+$routes->post('roles/storeKategori', 'RoleController::storeKategori');
+$routes->post('roles/storeTeam', 'RoleController::storeTeam');
+
+$routes->get('roles/deleteKategori/(:num)', 'RoleController::deleteKategori/$1');
+$routes->get('roles/deleteTeam/(:num)', 'RoleController::deleteTeam/$1');
+
+// 🔥 Route aktivasi
+$routes->get('roles/activateKategori/(:num)', 'RoleController::activateKategori/$1');
+$routes->get('roles/activateTeam/(:num)', 'RoleController::activateTeam/$1');
+
 });
+
