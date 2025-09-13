@@ -52,7 +52,7 @@
               <td><?= str_repeat('*', 8) ?></td>
               <td><?= esc($u['role']) ?></td>
               <td><?= esc($u['nama_kategori'] ?? '-') ?></td>
-              <td><?= esc($u['nama'] ?? '-') ?></td>
+              <td><?= esc($u['nama_tl'] ?? '-') ?></td> <!-- ✅ diperbaiki, ambil nama TL -->
               <td class="action-buttons">
                 <?php if ($u['role'] === 'agent'): ?>
                     <a href="<?= base_url('admin/users/edit_agent/' . $u['id']) ?>" class="btn btn-green btn-sm">EDIT</a>
@@ -120,8 +120,8 @@
   background: #dc3545; 
   color: white; }
 
-.btn:hover { o
-  pacity: 0.9; 
+.btn:hover { 
+  opacity: 0.9; 
   transform: scale(1.05); }
 
 /* Tombol kecil untuk tabel */

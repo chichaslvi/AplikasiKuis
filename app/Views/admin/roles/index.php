@@ -132,10 +132,6 @@
     background: #c0392b;
     transform: translateY(-2px);
 }
-.btn-delete:hover {
-    background: #c0392b;
-    transform: translateY(-2px);
-}
 
 /* responsive sederhana */
 @media (max-width: 600px) {
@@ -160,7 +156,6 @@
     <div class="role-section">
         <h4>Kategori Agent</h4>
 
-        <!-- tambahin form action ke controller -->
         <form class="form-inline" method="post" action="<?= site_url('admin/roles/storeKategori') ?>">
             <input type="text" name="nama" id="inputKategori" class="txt" placeholder="Masukkan Teks...">
             <button type="submit" id="btnAddKategori" class="btn-add"><i class="fa-solid fa-plus"></i> Tambah Kategori</button>
@@ -168,35 +163,39 @@
 
         <h5>Aktif</h5>
         <div class="role-table" id="kategoriListActive">
-    <?php foreach ($kategori_active as $k): ?>
-        <div class="role-row">
-            <div class="role-name"><?= esc($k['nama_kategori']) ?></div>
-            <a href="<?= site_url('admin/roles/deleteKategori/'.$k['id_kategori']) ?>"
-               class="btn-delete"
-               onclick="return confirm('Nonaktifkan <?= esc($k['nama_kategori']) ?>?')">NONAKTIFKAN</a>
+            <?php foreach ($kategori_active as $k): ?>
+                <div class="role-row">
+                    <div class="role-name"><?= esc($k['nama_kategori']) ?></div>
+                    <a href="<?= site_url('admin/roles/deleteKategori/'.$k['id_kategori']) ?>"
+                       class="btn-delete"
+                       onclick="return confirm('Nonaktifkan <?= esc($k['nama_kategori']) ?>?')">NONAKTIFKAN</a>
+                </div>
+            <?php endforeach; ?>
         </div>
-    <?php endforeach; ?>
-</div>
 
         <h5>Nonaktif</h5>
         <div class="role-table" id="kategoriListInactive">
-    <?php foreach ($kategori_inactive as $k): ?>
-        <div class="role-row">
-            <div class="role-name"><?= esc($k['nama_kategori']) ?></div>
-            <a href="<?= site_url('admin/roles/activateKategori/'.$k['id_kategori']) ?>"
-               class="btn-add"
-               onclick="return confirm('Aktifkan <?= esc($k['nama_kategori']) ?>?')">AKTIFKAN</a>
-        </div>
-    <?php endforeach; ?>
-</div>
+            <?php foreach ($kategori_inactive as $k): ?>
+                <div class="role-row">
+                    <div class="role-name"><?= esc($k['nama_kategori']) ?></div>
+                    <div style="display:flex; gap:6px;">
+                        <a href="<?= site_url('admin/roles/activateKategori/'.$k['id_kategori']) ?>"
+                           class="btn-add"
+                           onclick="return confirm('Aktifkan <?= esc($k['nama_kategori']) ?>?')">AKTIFKAN</a>
 
+                        <a href="<?= site_url('admin/roles/destroyKategori/'.$k['id_kategori']) ?>"
+                           class="btn-delete"
+                           onclick="return confirm('Hapus permanen <?= esc($k['nama_kategori']) ?>?')">HAPUS</a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 
     <!-- ===== TEAM LEADER ===== -->
     <div class="role-section">
         <h4>Team Leader</h4>
 
-        <!-- tambahin form action ke controller -->
         <form class="form-inline" method="post" action="<?= site_url('admin/roles/storeTeam') ?>">
             <input type="text" name="nama" id="inputTeam" class="txt" placeholder="Masukkan Teks...">
             <button type="submit" id="btnAddTeam" class="btn-add"><i class="fa-solid fa-plus"></i> Tambah Team Leader</button>
@@ -204,59 +203,38 @@
 
         <h5>Aktif</h5>
         <div class="role-table" id="teamListActive">
-    <?php foreach ($team_active as $t): ?>
-    <div class="role-row">
-        <div class="role-name"><?= esc($t['nama']) ?></div>
-        <a href="<?= site_url('admin/roles/deleteTeam/'.$t['id']) ?>"
-           class="btn-delete"
-           onclick="return confirm('Nonaktifkan <?= esc($t['nama']) ?>?')">NONAKTIFKAN</a>
-    </div>
-<?php endforeach; ?>
-</div>
+            <?php foreach ($team_active as $t): ?>
+                <div class="role-row">
+                    <div class="role-name"><?= esc($t['nama']) ?></div>
+                    <a href="<?= site_url('admin/roles/deleteTeam/'.$t['id']) ?>"
+                       class="btn-delete"
+                       onclick="return confirm('Nonaktifkan <?= esc($t['nama']) ?>?')">NONAKTIFKAN</a>
+                </div>
+            <?php endforeach; ?>
+        </div>
 
         <h5>Nonaktif</h5>
         <div class="role-table" id="teamListInactive">
-    <?php foreach ($team_inactive as $t): ?>
-    <div class="role-row">
-        <div class="role-name"><?= esc($t['nama']) ?></div>
-        <a href="<?= site_url('admin/roles/activateTeam/'.$t['id']) ?>"
-           class="btn-add"
-           onclick="return confirm('Aktifkan <?= esc($t['nama']) ?>?')">AKTIFKAN</a>
-    </div>
-<?php endforeach; ?>
-</div>
+            <?php foreach ($team_inactive as $t): ?>
+                <div class="role-row">
+                    <div class="role-name"><?= esc($t['nama']) ?></div>
+                    <div style="display:flex; gap:6px;">
+                        <a href="<?= site_url('admin/roles/activateTeam/'.$t['id']) ?>"
+                           class="btn-add"
+                           onclick="return confirm('Aktifkan <?= esc($t['nama']) ?>?')">AKTIFKAN</a>
 
+                        <a href="<?= site_url('admin/roles/destroyTeam/'.$t['id']) ?>"
+                           class="btn-delete"
+                           onclick="return confirm('Hapus permanen <?= esc($t['nama']) ?>?')">HAPUS</a>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 </div>
 
 <script>
-function tambahItem(inputId, listId) {
-    const input = document.getElementById(inputId);
-    const list = document.getElementById(listId);
-    const value = input.value.trim();
-
-    if(value !== "") {
-        const row = document.createElement("div");
-        row.className = "role-row";
-        row.innerHTML = `
-            <div class="role-name">${value}</div>
-            <button class="btn-delete">HAPUS</button>
-        `;
-
-        // hapus item
-        row.querySelector(".btn-delete").addEventListener("click", function() {
-            row.remove();
-        });
-
-        list.appendChild(row);
-        input.value = "";
-    } else {
-        alert("Teks tidak boleh kosong!");
-    }
-}
-
 document.getElementById("btnAddKategori")?.addEventListener("click", function(e) {
-    // biar tetap jalan kalau kamu mau pakai JS
     if(!document.getElementById("inputKategori").value.trim()){
         e.preventDefault();
         alert("Teks tidak boleh kosong!");
@@ -264,7 +242,6 @@ document.getElementById("btnAddKategori")?.addEventListener("click", function(e)
 });
 
 document.getElementById("btnAddTeam")?.addEventListener("click", function(e) {
-    // biar tetap jalan kalau kamu mau pakai JS
     if(!document.getElementById("inputTeam").value.trim()){
         e.preventDefault();
         alert("Teks tidak boleh kosong!");

@@ -12,7 +12,7 @@ class UserController extends BaseController
         $db = \Config\Database::connect();
 
         $builder = $db->table('users u')
-            ->select('u.*, ka.nama_kategori, tl.nama as nama')
+            ->select('u.*, ka.nama_kategori, tl.nama as nama_tl') // ✅ alias diperbaiki
             ->join('kategori_agent ka', 'ka.id_kategori = u.kategori_agent_id', 'left')
             ->join('team_leader tl', 'tl.id = u.team_leader_id', 'left');
 
@@ -41,7 +41,6 @@ class UserController extends BaseController
     {
         $userModel = new UserModel();
 
-        // Validasi input sederhana
         if (!$this->validate([
             'nama' => 'required',
             'nik' => 'required|is_unique[users.nik]',
@@ -142,12 +141,10 @@ class UserController extends BaseController
             'role' => $this->request->getPost('role'),
         ];
 
-        // Update password hanya jika diisi
         if ($this->request->getPost('password')) {
             $data['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
         }
 
-        // Jika role agent, update tambahan
         if ($user['role'] === 'agent') {
             $data['kategori_agent_id'] = $this->request->getPost('kategori_agent_id');
             $data['team_leader_id']    = $this->request->getPost('team_leader_id');
@@ -167,9 +164,6 @@ class UserController extends BaseController
         return redirect()->to('/admin/users')->with('success', 'User berhasil dihapus!');
     }
 
-    // =========================
-    // Tambahan untuk Edit Agent (Sudah diperbaiki)
-    // =========================
     public function edit_agent($id)
     {
         $userModel = new UserModel();
@@ -177,13 +171,11 @@ class UserController extends BaseController
 
         $data['agent'] = $userModel->find($id);
 
-        // Ambil daftar kategori agent langsung dari database
         $data['kategoris'] = $db->table('kategori_agent')
                                 ->select('id_kategori, nama_kategori')
                                 ->get()
                                 ->getResultArray();
 
-        // Ambil daftar team leader langsung dari database
         $data['teamLeaders'] = $db->table('team_leader')
                                   ->select('id, nama')
                                   ->get()
@@ -199,7 +191,6 @@ class UserController extends BaseController
         $userModel = new UserModel();
         $validation = \Config\Services::validation();
 
-        // Validasi input
         $validationRules = [
             'nama' => 'required',
             'nik' => 'required',
@@ -217,7 +208,6 @@ class UserController extends BaseController
             'team_leader_id'    => $this->request->getPost('team_leader_id') ?: null,
         ];
 
-        // Update password jika diisi
         $password = $this->request->getPost('password');
         if (!empty($password)) {
             $data['password'] = password_hash($password, PASSWORD_DEFAULT);

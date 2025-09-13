@@ -114,4 +114,34 @@ class RoleController extends BaseController
 
         return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil diaktifkan');
     }
+
+    // ✅ Hapus permanen kategori
+    public function destroyKategori($id)
+    {
+        $kategoriModel = new KategoriAgentModel();
+
+        $kategori = $kategoriModel->find($id);
+        if (!$kategori) {
+            return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
+        }
+
+        $kategoriModel->delete($id);
+
+        return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil dihapus permanen');
+    }
+
+    // ✅ Hapus permanen team leader
+    public function destroyTeam($id)
+    {
+        $teamModel = new TeamLeaderModel();
+
+        $team = $teamModel->find($id);
+        if (!$team) {
+            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
+        }
+
+        $teamModel->delete($id);
+
+        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil dihapus permanen');
+    }
 }
