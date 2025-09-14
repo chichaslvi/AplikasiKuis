@@ -7,7 +7,7 @@ use CodeIgniter\Model;
 class KuisModel extends Model
 {
     protected $table      = 'kuis';
-    protected $primaryKey = 'id';
+     protected $primaryKey = 'id_kuis';
     protected $allowedFields = [
         'nama_kuis', 
         'topik', 

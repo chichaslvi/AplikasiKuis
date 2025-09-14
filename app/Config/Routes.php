@@ -28,6 +28,11 @@ $routes->group('admin', function($routes) {
     $routes->get('kuis/create', 'KuisController::create');
     $routes->post('kuis/store_kuis', 'KuisController::store_kuis');
     $routes->post('kuis/import_excel', 'SoalController::import_excel');
+    $routes->get('kuis/edit/(:num)', 'KuisController::edit/$1');
+    $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
+    $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
+
+
 
     // Tambah Admin & Reviewer
     $routes->get('users/create_admin', 'UserController::create_admin'); // form tambah

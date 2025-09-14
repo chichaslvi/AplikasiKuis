@@ -46,11 +46,12 @@
                                     <span class="badge inactive">Inactive</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="actions">
-                                <button class="btn btn-upload">Upload</button>
-                                <button class="btn btn-edit">Edit</button>
-                                <button class="btn btn-delete">Hapus</button>
-                                <button class="btn btn-archive">Archive</button>
+                            <td class="actions"> 
+                                <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>" class="btn btn-upload">Upload</a>
+                                <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-edit">Edit</a>
+                                <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-delete" 
+                                onclick="return confirm('Yakin ingin menghapus kuis ini?')">Hapus</a>
+                                <a href="<?= base_url('admin/kuis/archive/' . $row['id_kuis']) ?>" class="btn btn-archive">Archive</a>
                             </td>
                         </tr>
                     <?php endforeach; ?>

@@ -9,13 +9,12 @@ use App\Models\KategoriAgentModel;
 class KuisController extends BaseController
 {
     public function index()
-{
-    $kuisModel = new \App\Models\KuisModel();
-    $data['kuis'] = $kuisModel->findAll();
+    {
+        $kuisModel = new KuisModel();
+        $data['kuis'] = $kuisModel->findAll();
 
-    return view('admin/kuis/index', $data); 
-}
-
+        return view('admin/kuis/index', $data); 
+    }
 
     public function create()
     {
@@ -29,19 +28,16 @@ class KuisController extends BaseController
     {
         $kuisModel = new KuisModel();
 
-        // ambil kategori multiple (array)
         $kategori = $this->request->getPost('id_kategori');
 
         $data = [
             'nama_kuis'         => $this->request->getPost('nama_kuis'),
             'topik'             => $this->request->getPost('topik'),
-            // samakan dengan "name" di form (tanggal_pelaksanaan)
             'tanggal'           => $this->request->getPost('tanggal_pelaksanaan'),
             'waktu_mulai'       => $this->request->getPost('waktu_mulai'),
             'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
             'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
             'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-            // simpan kategori sebagai string "1,3,5"
             'id_kategori'       => is_array($kategori) ? implode(',', $kategori) : $kategori,
         ];
 
@@ -49,4 +45,67 @@ class KuisController extends BaseController
 
         return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil ditambahkan');
     }
+
+    public function edit($id)
+    {
+        $kuisModel = new KuisModel();
+        $kategoriModel = new KategoriAgentModel();
+
+        $data['kuis'] = $kuisModel->find($id);
+        $data['kategori'] = $kategoriModel->findAll();
+
+        if (!$data['kuis']) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException("Kuis dengan ID $id tidak ditemukan.");
+        }
+
+        return view('admin/kuis/edit', $data);
+    }
+
+    public function update($id)
+    {
+        $kuisModel = new KuisModel();
+
+        $kategori = $this->request->getPost('id_kategori');
+
+        $data = [
+            'nama_kuis'         => $this->request->getPost('nama_kuis'),
+            'topik'             => $this->request->getPost('topik'),
+            'tanggal'           => $this->request->getPost('tanggal'),
+            'waktu_mulai'       => $this->request->getPost('waktu_mulai'),
+            'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
+            'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
+            'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
+            'id_kategori'       => is_array($kategori) ? implode(',', $kategori) : $kategori,
+        ];
+
+        $kuisModel->update($id, $data);
+
+        return redirect()->to('/admin/kuis')->with('success', 'Data kuis berhasil diperbarui');
+    
+    }
+    public function upload($id)
+{
+    $kuisModel = new KuisModel();
+
+    // update status jadi active
+    $kuisModel->update($id, ['status' => 'active']);
+
+    return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil diaktifkan.');
+}
+
+public function delete($id)
+{
+    $kuisModel = new KuisModel();
+
+    // pastikan data ada dulu
+    $kuis = $kuisModel->find($id);
+    if (!$kuis) {
+        throw new \CodeIgniter\Exceptions\PageNotFoundException("Kuis dengan ID $id tidak ditemukan.");
+    }
+
+    $kuisModel->delete($id);
+
+    return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil dihapus.');
+}
+
 }
