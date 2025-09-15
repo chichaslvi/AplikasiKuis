@@ -10,11 +10,13 @@
     <form action="<?= base_url('admin/users/store_agent') ?>" method="post">
       <?= csrf_field() ?> <!-- CSRF token -->
 
+      <!-- Input Nama -->
       <div class="form-group">
         <label for="nama">Nama</label>
         <input type="text" id="nama" name="nama" class="form-control" required>
       </div>
 
+      <!-- Input NIK -->
       <div class="form-group">
         <label for="nik">NIK</label>
         <input type="text" id="nik" name="nik" class="form-control" required>
@@ -29,11 +31,13 @@
         </div>
       </div>
 
+      <!-- Role fixed ke Agent -->
       <div class="form-group">
         <label for="role">Role</label>
         <input type="text" id="role" name="role" class="form-control" value="Agent" readonly>
       </div>
 
+      <!-- Dropdown Kategori Agent -->
       <div class="form-group">
         <label for="kategori_agent_id">Kategori Agent</label>
         <select id="kategori_agent_id" name="kategori_agent_id" class="form-control" required>
@@ -44,6 +48,7 @@
         </select>
       </div>
 
+      <!-- Dropdown Team Leader -->
       <div class="form-group">
         <label for="team_leader_id">Nama TL</label>
         <select id="team_leader_id" name="team_leader_id" class="form-control" required>
@@ -54,6 +59,7 @@
         </select>
       </div>
 
+      <!-- Tombol -->
       <div class="form-actions">
         <button type="submit" class="btn btn-green">SIMPAN</button>
         <a href="<?= base_url('admin/users') ?>" class="btn btn-blue">BATAL</a>

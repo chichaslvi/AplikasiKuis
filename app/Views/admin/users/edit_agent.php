@@ -18,6 +18,7 @@
     <form action="<?= base_url('admin/users/update_agent/' . $agent['id']) ?>" method="post">
       <?= csrf_field() ?>
 
+      <!-- Nama -->
       <div class="form-group">
         <label for="nama">Nama</label>
         <input type="text" name="nama" id="nama" value="<?= esc($agent['nama']) ?>" class="form-control" required>
@@ -26,6 +27,7 @@
         <?php endif; ?>
       </div>
 
+      <!-- NIK -->
       <div class="form-group">
         <label for="nik">NIK</label>
         <input type="text" name="nik" id="nik" value="<?= esc($agent['nik']) ?>" class="form-control" required>
@@ -34,6 +36,7 @@
         <?php endif; ?>
       </div>
 
+      <!-- Password -->
       <div class="form-group">
         <label for="password">Password <small>(biarkan kosong jika tidak ingin diubah)</small></label>
         <div class="password-wrapper">
@@ -45,13 +48,14 @@
         <?php endif; ?>
       </div>
 
+      <!-- Dropdown Kategori Agent -->
       <div class="form-group">
         <label for="kategori_agent_id">Kategori Agent</label>
         <select name="kategori_agent_id" id="kategori_agent_id" class="form-control" required>
-          <option value="">-- Pilih Kategori --</option>
-          <?php foreach($kategoris as $kategori): ?>
-            <option value="<?= $kategori['id_kategori'] ?>" <?= $agent['kategori_agent_id'] == $kategori['id_kategori'] ? 'selected' : '' ?>>
-              <?= esc($kategori['nama_kategori']) ?>
+          <option value="">-- Pilih Kategori Agent --</option>
+          <?php foreach($kategoris as $k): ?>
+            <option value="<?= $k['id_kategori'] ?>" <?= $agent['kategori_agent_id'] == $k['id_kategori'] ? 'selected' : '' ?>>
+              <?= esc($k['nama_kategori']) ?>
             </option>
           <?php endforeach; ?>
         </select>
@@ -60,12 +64,15 @@
         <?php endif; ?>
       </div>
 
+      <!-- Dropdown Team Leader -->
       <div class="form-group">
         <label for="team_leader_id">Team Leader</label>
         <select name="team_leader_id" id="team_leader_id" class="form-control">
-          <option value="">-- Pilih TL --</option>
+          <option value="">-- Pilih Team Leader --</option>
           <?php foreach($teamLeaders as $tl): ?>
-            <option value="<?= $tl['id'] ?>" <?= $agent['team_leader_id'] == $tl['id'] ? 'selected' : '' ?>><?= esc($tl['nama']) ?></option>
+            <option value="<?= $tl['id'] ?>" <?= $agent['team_leader_id'] == $tl['id'] ? 'selected' : '' ?>>
+              <?= esc($tl['nama']) ?>
+            </option>
           <?php endforeach; ?>
         </select>
         <?php if(isset($validation) && $validation->hasError('team_leader_id')): ?>
@@ -73,6 +80,7 @@
         <?php endif; ?>
       </div>
 
+      <!-- Tombol -->
       <div class="form-actions">
         <button type="submit" class="btn btn-green">Update</button>
         <a href="<?= base_url('admin/users') ?>" class="btn btn-blue">Batal</a>

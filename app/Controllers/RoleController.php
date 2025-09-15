@@ -12,7 +12,6 @@ class RoleController extends BaseController
         $kategoriModel = new KategoriAgentModel();
         $teamModel     = new TeamLeaderModel();
 
-        // ambil kategori & team aktif & nonaktif
         $data['kategori_active']   = $kategoriModel->where('is_active', 1)->findAll();
         $data['kategori_inactive'] = $kategoriModel->where('is_active', 0)->findAll();
 
@@ -21,6 +20,10 @@ class RoleController extends BaseController
 
         return view('admin/roles/index', $data);
     }
+
+    // =============================
+    // STORE
+    // =============================
 
     public function storeKategori()
     {
@@ -58,90 +61,135 @@ class RoleController extends BaseController
         return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil ditambahkan');
     }
 
-    public function deleteKategori($id)
+    // =============================
+    // NONAKTIFKAN
+    // =============================
+
+    public function nonaktifkanKategori($id)
     {
         $kategoriModel = new KategoriAgentModel();
-
         $kategori = $kategoriModel->find($id);
+
         if (!$kategori) {
             return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
         }
 
         $kategoriModel->update($id, ['is_active' => 0]);
-
-        return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil di-nonaktifkan');
+        return redirect()->to('/admin/roles')->with('success', 'Kategori Agent berhasil dinonaktifkan');
     }
+
+    public function nonaktifkanTeam($id)
+    {
+        $teamModel = new TeamLeaderModel();
+        $team = $teamModel->find($id);
+
+        if (!$team) {
+            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
+        }
+
+        $teamModel->update($id, ['is_active' => 0]);
+        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil dinonaktifkan');
+    }
+
+    // =============================
+    // AKTIFKAN
+    // =============================
+
+    public function aktifkanKategori($id)
+    {
+        $kategoriModel = new KategoriAgentModel();
+        $kategori = $kategoriModel->find($id);
+
+        if (!$kategori) {
+            return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
+        }
+
+        $kategoriModel->update($id, ['is_active' => 1]);
+        return redirect()->to('/admin/roles')->with('success', 'Kategori Agent berhasil diaktifkan');
+    }
+
+    public function aktifkanTeam($id)
+    {
+        $teamModel = new TeamLeaderModel();
+        $team = $teamModel->find($id);
+
+        if (!$team) {
+            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
+        }
+
+        $teamModel->update($id, ['is_active' => 1]);
+        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil diaktifkan');
+    }
+
+    // ✅ ALIAS supaya route `activateTeam` juga jalan
+    public function activateTeam($id)
+    {
+        return $this->aktifkanTeam($id);
+    }
+
+    // ✅ ALIAS supaya route `activateKategori` juga jalan
+    public function activateKategori($id)
+    {
+        return $this->aktifkanKategori($id);
+    }
+
+    // =============================
+    // HAPUS PERMANEN
+    // =============================
+
+    public function destroyKategori($id)
+    {
+        $kategoriModel = new KategoriAgentModel();
+        $kategori = $kategoriModel->find($id);
+
+        if (!$kategori) {
+            return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
+        }
+
+        $kategoriModel->delete($id);
+        return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil dihapus permanen');
+    }
+
+    public function destroyTeam($id)
+    {
+        $teamModel = new TeamLeaderModel();
+        $team = $teamModel->find($id);
+
+        if (!$team) {
+            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
+        }
+
+        $teamModel->delete($id);
+        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil dihapus permanen');
+    }
+
+    // =============================
+    // DELETE (Soft Delete)
+    // =============================
 
     public function deleteTeam($id)
     {
         $teamModel = new TeamLeaderModel();
 
         $team = $teamModel->find($id);
-        if (!$team) {
-            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
+        if ($team) {
+            $teamModel->update($id, ['is_active' => 0]);
+            return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil dinonaktifkan.');
         }
 
-        $teamModel->update($id, ['is_active' => 0]);
-
-        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil di-nonaktifkan');
+        return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan.');
     }
 
-    // ✅ Tambahan baru
-    public function activateKategori($id)
+    public function deleteKategori($id)
     {
         $kategoriModel = new KategoriAgentModel();
 
         $kategori = $kategoriModel->find($id);
-        if (!$kategori) {
-            return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
+        if ($kategori) {
+            $kategoriModel->update($id, ['is_active' => 0]);
+            return redirect()->to('/admin/roles')->with('success', 'Kategori Agent berhasil dinonaktifkan.');
         }
 
-        $kategoriModel->update($id, ['is_active' => 1]);
-
-        return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil diaktifkan');
-    }
-
-    public function activateTeam($id)
-    {
-        $teamModel = new TeamLeaderModel();
-
-        $team = $teamModel->find($id);
-        if (!$team) {
-            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
-        }
-
-        $teamModel->update($id, ['is_active' => 1]);
-
-        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil diaktifkan');
-    }
-
-    // ✅ Hapus permanen kategori
-    public function destroyKategori($id)
-    {
-        $kategoriModel = new KategoriAgentModel();
-
-        $kategori = $kategoriModel->find($id);
-        if (!$kategori) {
-            return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
-        }
-
-        $kategoriModel->delete($id);
-
-        return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil dihapus permanen');
-    }
-
-    // ✅ Hapus permanen team leader
-    public function destroyTeam($id)
-    {
-        $teamModel = new TeamLeaderModel();
-
-        $team = $teamModel->find($id);
-        if (!$team) {
-            return redirect()->to('/admin/roles')->with('error', 'Team Leader tidak ditemukan');
-        }
-
-        $teamModel->delete($id);
-
-        return redirect()->to('/admin/roles')->with('success', 'Team Leader berhasil dihapus permanen');
+        return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan.');
     }
 }
