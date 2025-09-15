@@ -107,5 +107,27 @@ public function delete($id)
 
     return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil dihapus.');
 }
+public function archive($id)
+{
+    $kuisModel = new \App\Models\KuisModel();
+    $kuis = $kuisModel->find($id);
+
+    if (!$kuis || empty($kuis['file_excel'])) {
+        return redirect()->back()->with('error', 'File arsip tidak ditemukan.');
+    }
+
+    $filePath = WRITEPATH . 'uploads/' . $kuis['file_excel']; // sesuaikan path
+
+    if (!file_exists($filePath)) {
+        return redirect()->back()->with('error', 'File tidak tersedia di server.');
+    }
+
+    // Buka file excel langsung (tanpa download)
+    return $this->response
+        ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        ->setHeader('Content-Disposition', 'inline; filename="' . $kuis['file_excel'] . '"')
+        ->setBody(file_get_contents($filePath));
+}
+
 
 }

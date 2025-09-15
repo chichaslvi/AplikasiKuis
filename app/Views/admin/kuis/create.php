@@ -47,6 +47,14 @@
                oninput="this.value=this.value.slice(0,1)">
       </div>
 
+       <div class="form-group import-excel">  
+        <div class="import-box">
+          <label>Import kuis dari Excel</label>  
+          <input type="file" id="file_excel" name="file_excel" accept=".xls,.xlsx" required>  
+          <small>Format file: .xls atau .xlsx</small>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="id_kategori">Kategori</label>
         <div>
@@ -64,17 +72,9 @@
         <?php endforeach; ?>
       </div>
 
-      <div class="form-group import-excel">  
-        <div class="import-box">
-          <label>Import kuis dari Excel</label>  
-          <input type="file" id="file_excel" name="file_excel" accept=".xls,.xlsx" required>  
-          <small>Format file: .xls atau .xlsx</small>
-        </div>
-      </div>
-
       <div class="form-actions">
         <button type="submit" class="btn btn-green">SIMPAN</button>
-        <a href="<?= base_url('admin/users') ?>" class="btn btn-blue">BATAL</a>
+        <a href="<?= base_url('admin/kuis') ?>" class="btn btn-blue">BATAL</a>
       </div>
     </form>
   </div>
