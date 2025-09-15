@@ -47,4 +47,12 @@ class UserModel extends Model
         }
         return $data;
     }
+
+    // ✅ Cek jumlah user aktif di bawah Team Leader
+    public function countActiveByTeam($teamId)
+    {
+        return $this->where('team_leader_id', $teamId)
+                    ->where('is_active', 1)
+                    ->countAllResults();
+    }
 }

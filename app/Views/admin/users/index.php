@@ -59,7 +59,13 @@
                 <?php else: ?>
                     <a href="<?= base_url('admin/users/edit/' . $u['id']) ?>" class="btn btn-green btn-sm">EDIT</a>
                 <?php endif; ?>
-                <a href="<?= base_url('admin/users/delete/' . $u['id']) ?>" class="btn btn-red btn-sm" onclick="return confirm('Yakin hapus user ini?')">HAPUS</a>
+
+                <?php if ($u['is_active'] == 1): ?>
+                    <a href="<?= base_url('admin/users/deactivate/'.$u['id']) ?>" class="btn btn-red btn-sm">Nonaktifkan</a>
+                <?php else: ?>
+                    <a href="<?= base_url('admin/users/activate/'.$u['id']) ?>" class="btn btn-green btn-sm">Aktifkan</a>
+                    <a href="<?= base_url('admin/users/delete/'.$u['id']) ?>" class="btn btn-red btn-sm" onclick="return confirm('Yakin hapus permanen?')">Hapus</a>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

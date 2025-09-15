@@ -71,13 +71,13 @@
     background: var(--primary-color);
     border: none;
     color: var(--text-light);
-    padding: 6px 12px;   /* 👉 lebih kecil dari sebelumnya */
+    padding: 6px 12px;
     border-radius: 6px;
     display: inline-flex;
     gap: 6px;
     align-items: center;
     cursor: pointer;
-    font-size: 12px;     /* 👉 perkecil font */
+    font-size: 12px;
     font-weight: 500;
     transition: background .2s ease, transform .1s ease;
 }
@@ -87,6 +87,7 @@
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0,112,192,0.3);
 }
+
 /* area berisi daftar role */
 .role-table {
     list-style: none;
@@ -121,10 +122,10 @@
     background: var(--danger-color);
     border: none;
     color: var(--text-light);
-    padding: 6px 12px;   /* 👉 lebih kecil */
+    padding: 6px 12px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;     /* 👉 perkecil font */
+    font-size: 12px;
     font-weight: 500;
     transition: background .2s ease, transform .1s ease;
 }
@@ -166,7 +167,7 @@
             <?php foreach ($kategori_active as $k): ?>
                 <div class="role-row">
                     <div class="role-name"><?= esc($k['nama_kategori']) ?></div>
-                    <a href="<?= site_url('admin/roles/deleteKategori/'.$k['id_kategori']) ?>"
+                    <a href="<?= site_url('admin/roles/deactivateKategori/'.$k['id_kategori']) ?>"
                        class="btn-delete"
                        onclick="return confirm('Nonaktifkan <?= esc($k['nama_kategori']) ?>?')">NONAKTIFKAN</a>
                 </div>
@@ -206,7 +207,7 @@
             <?php foreach ($team_active as $t): ?>
                 <div class="role-row">
                     <div class="role-name"><?= esc($t['nama']) ?></div>
-                    <a href="<?= site_url('admin/roles/deleteTeam/'.$t['id']) ?>"
+                    <a href="<?= site_url('admin/roles/deactivateTeam/'.$t['id']) ?>"
                        class="btn-delete"
                        onclick="return confirm('Nonaktifkan <?= esc($t['nama']) ?>?')">NONAKTIFKAN</a>
                 </div>

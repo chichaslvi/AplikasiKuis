@@ -153,16 +153,32 @@ class UserController extends BaseController
         return redirect()->to('/admin/users')->with('success', 'User berhasil diperbarui!');
     }
 
+    // ========================
+    // Aktivasi / Nonaktifkan / Hapus
+    // ========================
+    public function deactivate($id)
+    {
+        $userModel = new UserModel();
+        $userModel->update($id, ['is_active' => 0]);
+        return redirect()->to('admin/users')->with('success', 'User dinonaktifkan');
+    }
+
+    public function activate($id)
+    {
+        $userModel = new UserModel();
+        $userModel->update($id, ['is_active' => 1]);
+        return redirect()->to('admin/users')->with('success', 'User diaktifkan');
+    }
+
     public function delete($id)
     {
         $userModel = new UserModel();
         $userModel->delete($id);
-
-        return redirect()->to('/admin/users')->with('success', 'User berhasil dihapus!');
+        return redirect()->to('admin/users')->with('success', 'User berhasil dihapus permanen!');
     }
 
     // ========================
-    // Form edit Agent khusus (versi final gabungan)
+    // Form edit Agent khusus
     // ========================
     public function edit_agent($id)
     {

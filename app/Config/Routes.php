@@ -38,27 +38,31 @@ $routes->group('admin', function($routes) {
     $routes->get('kuis/edit/(:num)', 'KuisController::edit/$1');
     $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
     $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
+    $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
+     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
 
     // ==================
     // Manajemen User
     // ==================
 
     // Admin & Reviewer
-    $routes->get('users/create_admin', 'UserController::create_admin'); // form tambah admin/reviewer
-    $routes->post('users/store_admin', 'UserController::store_admin');  // simpan admin/reviewer
+    $routes->get('users/create_admin', 'UserController::create_admin'); 
+    $routes->post('users/store_admin', 'UserController::store_admin');  
 
     // Agent
-    $routes->get('users/create_agent', 'UserController::create_agent'); // form tambah agent
-    $routes->post('users/store_agent', 'UserController::store_agent');  // simpan agent
-    $routes->get('users/edit_agent/(:num)', 'UserController::edit_agent/$1');   // form edit agent
-    $routes->post('users/update_agent/(:num)', 'UserController::update_agent/$1'); // update agent
+    $routes->get('users/create_agent', 'UserController::create_agent'); 
+    $routes->post('users/store_agent', 'UserController::store_agent');  
+    $routes->get('users/edit_agent/(:num)', 'UserController::edit_agent/$1');   
+    $routes->post('users/update_agent/(:num)', 'UserController::update_agent/$1'); 
 
     // Umum (semua user)
     $routes->get('users/edit/(:num)', 'UserController::edit/$1');
     $routes->post('users/update/(:num)', 'UserController::update/$1');
     $routes->get('users/delete/(:num)', 'UserController::delete/$1');
+    $routes->get('users/deactivate/(:num)', 'UserController::deactivate/$1');
+    $routes->get('users/activate/(:num)', 'UserController::activate/$1');
 
-    // Filter berdasarkan role (contoh: /admin/users/role/agent)
+    // Filter berdasarkan role
     $routes->get('users/role/(:alpha)', 'UserController::index/$1');
 
     // ==================
@@ -70,14 +74,21 @@ $routes->group('admin', function($routes) {
     $routes->post('roles/storeKategori', 'RoleController::storeKategori');
     $routes->post('roles/storeTeam', 'RoleController::storeTeam');
 
+    // Nonaktifkan
+    $routes->get('roles/nonaktifkanKategori/(:num)', 'RoleController::nonaktifkanKategori/$1');
+    $routes->get('roles/nonaktifkanTeam/(:num)', 'RoleController::nonaktifkanTeam/$1');
+    $routes->get('roles/deactivateKategori/(:num)', 'RoleController::nonaktifkanKategori/$1'); // alias
+    $routes->get('roles/deactivateTeam/(:num)', 'RoleController::nonaktifkanTeam/$1'); // alias
+
     // Soft Delete
     $routes->get('roles/deleteKategori/(:num)', 'RoleController::deleteKategori/$1');
     $routes->get('roles/deleteTeam/(:num)', 'RoleController::deleteTeam/$1');
 
     // Aktivasi kembali
-    $routes->get('roles/activateKategori/(:num)', 'RoleController::activateKategori/$1');
-    $routes->get('roles/aktifkanTeam/(:num)', 'RoleController::aktifkanTeam/$1'); // ✅ perbaikan prefix
-    $routes->get('roles/activateTeam/(:num)', 'RoleController::activateTeam/$1'); // ✅ alias opsional
+    $routes->get('roles/aktifkanKategori/(:num)', 'RoleController::aktifkanKategori/$1');
+    $routes->get('roles/activateKategori/(:num)', 'RoleController::activateKategori/$1'); // alias
+    $routes->get('roles/aktifkanTeam/(:num)', 'RoleController::aktifkanTeam/$1');
+    $routes->get('roles/activateTeam/(:num)', 'RoleController::activateTeam/$1'); // alias
 
     // Hapus permanen
     $routes->get('roles/destroyKategori/(:num)', 'RoleController::destroyKategori/$1');
