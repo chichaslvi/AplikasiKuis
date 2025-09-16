@@ -173,7 +173,7 @@ class UserController extends BaseController
     public function delete($id)
     {
         $userModel = new UserModel();
-        $userModel->delete($id);
+        $userModel->delete($id, true); // ✅ hapus permanen, bukan soft delete
         return redirect()->to('admin/users')->with('success', 'User berhasil dihapus permanen!');
     }
 

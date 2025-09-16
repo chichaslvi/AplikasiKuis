@@ -18,7 +18,8 @@ class UserModel extends Model
         'must_change_password',
         'last_password_change',
         'created_at',
-        'updated_at'
+        'updated_at',
+        'is_active'            // ✅ tambahin agar bisa update/insert kolom ini
     ];
 
     // ✅ otomatis isi created_at & updated_at
