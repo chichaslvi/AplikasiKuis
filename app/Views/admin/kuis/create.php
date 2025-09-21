@@ -47,7 +47,7 @@
                oninput="this.value=this.value.slice(0,1)">
       </div>
 
-       <div class="form-group import-excel">  
+      <div class="form-group import-excel">  
         <div class="import-box">
           <label>Import kuis dari Excel</label>  
           <input type="file" id="file_excel" name="file_excel" accept=".xls,.xlsx" required>  
@@ -55,22 +55,34 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="id_kategori">Kategori</label>
-        <div>
-          <label>
+      <!-- Checkbox Kategori Agent -->
+     <div class="form-group">
+    <label for="id_kategori">Kategori Agent</label>
+    <div>
+        <label>
             <input type="checkbox" id="checkAll"> <strong>Pilih Semua</strong>
-          </label>
-        </div>
-        <?php foreach ($kategori as $row): ?>
-          <div>
+        </label>
+    </div>
+    <?php foreach ($kategori as $row): ?>
+        <div>
             <label>
-              <input type="checkbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>">
-              <?= $row['nama_kategori'] ?>
+                <input type="checkbox" class="kategoriCheckbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>">
+                <?= esc($row['nama_kategori']) ?>
             </label>
-          </div>
-        <?php endforeach; ?>
-      </div>
+        </div>
+    <?php endforeach; ?>
+</div>
+
+<script>
+    // Fitur "Pilih Semua"
+    const checkAll = document.getElementById('checkAll');
+    const checkboxes = document.querySelectorAll('.kategoriCheckbox');
+
+    checkAll.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+</script>
+
 
       <div class="form-actions">
         <button type="submit" class="btn btn-green">SIMPAN</button>
@@ -121,6 +133,8 @@ document.getElementById("formKuis").addEventListener("submit", function(e) {
   }
 });
 </script>
+
+
 
 
 
@@ -240,21 +254,5 @@ document.getElementById("formKuis").addEventListener("submit", function(e) {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.min.js"></script>
 
-<script>
-flatpickr("#tanggal_pelaksanaan", {
-  dateFormat: "Y-m-d",
-  allowInput: false,
-  monthSelectorType: "static",
-  plugins: [
-    new confirmDatePlugin({ confirmText: "Done" })
-  ]
-});
-
-// Pilih Semua checkbox
-document.getElementById('checkAll').addEventListener('change', function() {
-  const checkboxes = document.querySelectorAll('input[name="id_kategori[]"]');
-  checkboxes.forEach(cb => cb.checked = this.checked);
-});
-</script>
 
 <?= $this->endSection() ?>

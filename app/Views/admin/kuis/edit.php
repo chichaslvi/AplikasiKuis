@@ -55,23 +55,55 @@
                oninput="this.value=this.value.slice(0,1)">
       </div>
 
-      <div class="form-group">
-        <label for="id_kategori">Kategori</label>
-        <div>
-          <label>
+     <!-- Checkbox Kategori Agent -->
+<div class="form-group">
+    <label for="id_kategori">Kategori Agent</label>
+    <div>
+        <label>
             <input type="checkbox" id="checkAll"> <strong>Pilih Semua</strong>
-          </label>
-        </div>
-        <?php foreach ($kategori as $row): ?>
-          <div>
+        </label>
+    </div>
+
+    <?php 
+    // Ambil array id_kategori dari pivot table kuis_kategori
+    // $kuisKategori = hasil query pivot table kuis_kategori untuk kuis ini
+    $selectedKategori = array_column($kuisKategori, 'id_kategori'); 
+    ?>
+
+    <?php foreach ($kategori as $row): ?>
+        <div>
             <label>
-              <input type="checkbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>"
-                <?= in_array($row['id_kategori'], explode(',', $kuis['id_kategori'])) ? 'checked' : '' ?>>
-              <?= $row['nama_kategori'] ?>
+                <input type="checkbox" class="kategoriCheckbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>"
+                    <?= in_array($row['id_kategori'], $selectedKategori) ? 'checked' : '' ?>>
+                <?= esc($row['nama_kategori']) ?>
             </label>
-          </div>
-        <?php endforeach; ?>
-      </div>
+        </div>
+    <?php endforeach; ?>
+</div>
+
+<script>
+    // Fitur "Pilih Semua"
+    const checkAll = document.getElementById('checkAll');
+    const checkboxes = document.querySelectorAll('.kategoriCheckbox');
+
+    // Set "Pilih Semua" checked jika semua checkbox sudah dicentang
+    function updateCheckAll() {
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        checkAll.checked = allChecked;
+    }
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateCheckAll);
+    });
+
+    // Event klik "Pilih Semua"
+    checkAll.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+    });
+
+    // Jalankan sekali saat load untuk set status checkAll
+    updateCheckAll();
+</script>
 
       <div class="form-actions">
         <button type="submit" class="btn btn-green">SIMPAN PERUBAHAN</button>
@@ -84,6 +116,22 @@
 <!-- Flatpickr CSS -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.min.js"></script>
+<script>
+flatpickr("#tanggal_pelaksanaan", {
+  dateFormat: "Y-m-d",
+  allowInput: false,
+  monthSelectorType: "static",
+  plugins: [
+    new confirmDatePlugin({ confirmText: "Done" })
+  ]
+});
+
+
+</script>
+
 
 <style>
   .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0px 3px 6px rgba(0,0,0,0.08); margin-top: 20px; width: 100%; max-width: 600px; }
@@ -121,11 +169,6 @@ flatpickr("#tanggal_pelaksanaan", {
   ]
 });
 
-// Pilih Semua checkbox
-document.getElementById('checkAll').addEventListener('change', function() {
-  const checkboxes = document.querySelectorAll('input[name="id_kategori[]"]');
-  checkboxes.forEach(cb => cb.checked = this.checked);
-});
-</script>
+
 
 <?= $this->endSection() ?>

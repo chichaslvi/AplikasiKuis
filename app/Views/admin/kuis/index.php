@@ -24,7 +24,7 @@
     <table class="table-kuis">
       <thead>
         <tr>
-          <th>ID</th>
+          <th>No</th>
           <th>Nama Kuis</th>
           <th>Topik</th>
           <th>Tanggal</th>
@@ -38,45 +38,57 @@
         </tr>
       </thead>
       <tbody>
-        <?php if (!empty($kuis)) : ?>
-          <?php foreach ($kuis as $row) : ?>
-            <tr>
-              <td><?= $row['id_kuis'] ?></td>
-              <td><?= esc($row['nama_kuis']) ?></td>
-              <td><?= esc($row['topik']) ?></td>
-              <td><?= esc($row['tanggal']) ?></td>
-              <td><?= esc($row['waktu_mulai']) ?></td>
-              <td><?= esc($row['waktu_selesai']) ?></td>
-              <td><?= esc($row['nilai_minimum']) ?></td>
-              <td><?= esc($row['batas_pengulangan']) ?></td>
-              <td><?= esc($row['id_kategori']) ?></td>
-              <td>
-                <?php if (isset($row['status']) && $row['status'] == 'active') : ?>
-                  <span class="badge active">Active</span>
-                <?php else : ?>
-                  <span class="badge inactive">Inactive</span>
-                <?php endif; ?>
-              </td>
-              <td class="action-buttons">
-                <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>" class="btn btn-blue btn-sm">UPLOAD</a>
-                <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-green btn-sm">EDIT</a>
-                <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-red btn-sm"
-                   onclick="return confirm('Yakin hapus kuis ini?')">HAPUS</a>
-                <a href="<?= base_url('admin/kuis/archive/' . $row['id_kuis']) ?>" class="btn btn-dark btn-sm">ARCHIVE</a>
-              </td>
-            </tr>
-          <?php endforeach; ?>
+       <?php if (!empty($kuis)) : ?>
+  <?php $no = 1; ?>
+  <?php foreach ($kuis as $row) : ?>
+    <tr>
+      <td><?= $no++ ?></td> <!-- nomor urut dinamis -->
+      <td><?= esc($row['nama_kuis']) ?></td>
+      <td><?= esc($row['topik']) ?></td>
+      <td><?= esc($row['tanggal']) ?></td>
+      <td><?= esc($row['waktu_mulai']) ?></td>
+      <td><?= esc($row['waktu_selesai']) ?></td>
+      <td><?= esc($row['nilai_minimum']) ?></td>
+      <td><?= esc($row['batas_pengulangan']) ?></td>
+      <td><?= esc($row['kategori']) ?></td>
+      <td>
+        <?php if (isset($row['status']) && $row['status'] == 'active') : ?>
+          <span class="badge active">Active</span>
         <?php else : ?>
-          <tr>
-            <td colspan="11">Belum ada data kuis.</td>
-          </tr>
+          <span class="badge inactive">Inactive</span>
         <?php endif; ?>
+      </td>
+      <td class="action-buttons">
+        <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>" class="btn btn-blue btn-sm">UPLOAD</a>
+        <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-green btn-sm">EDIT</a>
+        <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-red btn-sm"
+           onclick="return confirm('Yakin hapus kuis ini?')">HAPUS</a>
+        <a href="<?= base_url('admin/kuis/archive/' . $row['id_kuis']) ?>" class="btn btn-dark btn-sm">ARCHIVE</a>
+
+      </td>
+    </tr>
+  <?php endforeach; ?>
+<?php else : ?>
+  <tr>
+    <td colspan="11">Belum ada data kuis.</td>
+  </tr>
+<?php endif; ?>
       </tbody>
     </table>
   </div>
 </div>
 
+
+
 <style>
+/* Wrapper konten supaya responsive */
+.content {
+  max-width: 1200px; /* maksimal lebar konten */
+  margin: 0 auto;    /* center halaman */
+  padding: 20px;
+  box-sizing: border-box;
+}
+
 /* Card putih */
 .card {
   background: white;
@@ -85,6 +97,7 @@
   box-shadow: 0px 3px 6px rgba(0,0,0,0.08);
   margin-top: 20px;
   width: 100%;
+  overflow-x: auto; /* jika tabel terlalu lebar, bisa scroll horizontal */
 }
 
 /* Header halaman */
@@ -98,6 +111,9 @@
 /* Tombol Aksi */
 .actions {
   margin-bottom: 15px;
+  display: flex;
+  flex-wrap: wrap; /* supaya tombol tidak keluar layar */
+  gap: 10px;
 }
 .btn {
   padding: 8px 14px;
@@ -105,7 +121,6 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  margin-right: 6px;
   font-weight: 500;
   transition: all 0.3s ease;
   text-decoration: none;
@@ -129,6 +144,7 @@
 .table-kuis {
   width: 100%;
   border-collapse: collapse;
+  min-width: 900px; /* supaya tetap readable */
 }
 .table-kuis th, .table-kuis td {
   padding: 12px;
@@ -163,6 +179,7 @@
 .action-buttons {
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
   gap: 5px;
 }
 
@@ -176,5 +193,18 @@
   margin-bottom: 15px;
   font-size: 14px;
 }
+
+/* Responsive untuk layar kecil */
+@media screen and (max-width: 768px) {
+  .table-kuis th, .table-kuis td {
+    font-size: 12px;
+    padding: 8px;
+  }
+  .btn {
+    font-size: 12px;
+    padding: 6px 10px;
+  }
+}
+
 </style>
 <?= $this->endSection() ?>
