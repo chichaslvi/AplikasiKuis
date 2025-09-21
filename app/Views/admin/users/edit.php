@@ -39,32 +39,6 @@
         </select>
       </div>
 
-      <?php if ($user['role'] === 'agent') : ?>
-      <div class="form-group">
-        <label for="kategori_agent_id">Kategori Agent</label>
-        <select id="kategori_agent_id" name="kategori_agent_id" class="form-control" required>
-          <option value="">-- Pilih Kategori Agent --</option>
-          <?php foreach ($kategoriAgent as $ka): ?>
-            <option value="<?= $ka['id_kategori'] ?>" <?= $user['kategori_agent_id'] == $ka['id_kategori'] ? 'selected' : '' ?>>
-              <?= esc($ka['nama_kategori']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="team_leader_id">Nama Team Leader</label>
-        <select id="team_leader_id" name="team_leader_id" class="form-control" required>
-          <option value="">-- Pilih Team Leader --</option>
-          <?php foreach ($teamLeaders as $tl): ?>
-            <option value="<?= $tl['id'] ?>" <?= $user['team_leader_id'] == $tl['id'] ? 'selected' : '' ?>>
-              <?= esc($tl['nama']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <?php endif; ?>
-
       <div class="form-actions">
         <button type="submit" class="btn btn-green">Update</button>
         <a href="<?= base_url('admin/users') ?>" class="btn btn-blue">BATAL</a>

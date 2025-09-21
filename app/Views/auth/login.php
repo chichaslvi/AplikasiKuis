@@ -106,7 +106,6 @@
       border-left: 3px solid #007bff;
     }
 
-    /* Placeholder style */
     .input-group input::placeholder {
       color: #aaa;
       font-size: 10.45px;
@@ -120,7 +119,6 @@
       border-top: none;
     }
 
-    /* Ikon toggle password */
     .toggle-password {
       position: absolute;
       top: 50%;
@@ -167,6 +165,7 @@
     }
     .error { color: red; }
     .success { color: green; }
+    .info { color: #007bff; }
 
     @media (max-width: 768px) {
       .input-group {
@@ -194,16 +193,19 @@
       <?php if(session()->getFlashdata('success')): ?>
         <p class="flash success"><?= session()->getFlashdata('success') ?></p>
       <?php endif; ?>
+      <?php if(session()->getFlashdata('info')): ?>
+        <p class="flash info"><?= session()->getFlashdata('info') ?></p>
+      <?php endif; ?>
 
       <form action="/auth/doLogin" method="post">
+        <?= csrf_field() ?>
         <div class="input-group">
-          <label for="nik">nik</label>
-          <input type="text" name="nik" id="nik" placeholder="Masukkan nik" required>
+          <label for="nik">NIK</label>
+          <input type="text" name="nik" id="nik" placeholder="Masukkan NIK" required>
         </div>
         <div class="input-group">
           <label for="password">Password</label>
-          <input type="password" name="password" id="password" placeholder="Masukkan password" required>
-          <!-- default: mata tertutup -->
+          <input type="password" name="password" id="password" placeholder="Masukkan password" required autocomplete="off">
           <i class="fa-solid fa-eye-slash toggle-password" id="togglePassword"></i>
         </div>
         <button type="submit">LOGIN</button>

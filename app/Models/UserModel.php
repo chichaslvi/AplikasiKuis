@@ -45,6 +45,10 @@ class UserModel extends Model
     {
         if (isset($data['data']['password']) && !empty($data['data']['password'])) {
             $data['data']['password'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
+
+            // ✅ update otomatis kalau password diubah
+            $data['data']['last_password_change'] = date('Y-m-d H:i:s');
+            $data['data']['must_change_password'] = 0; // tandai sudah diganti
         }
         return $data;
     }
@@ -55,5 +59,20 @@ class UserModel extends Model
         return $this->where('team_leader_id', $teamId)
                     ->where('is_active', 1)
                     ->countAllResults();
+    }
+
+    // ✅ Tambahan: ambil user by NIK (untuk login)
+    public function getUserByNik($nik)
+    {
+        return $this->where('nik', $nik)
+                    ->where('is_active', 1) // hanya user aktif yang bisa login
+                    ->first();
+    }
+
+    // ✅ Helper: cek apakah user wajib ganti password
+    public function mustChangePassword($userId)
+    {
+        $user = $this->find($userId);
+        return $user && $user['must_change_password'] == 1;
     }
 }
