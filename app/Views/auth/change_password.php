@@ -193,15 +193,18 @@
       <?php if(session()->getFlashdata('info')): ?>
         <p class="flash info"><?= session()->getFlashdata('info') ?></p>
       <?php endif; ?>
+      <?php if(session()->getFlashdata('success')): ?>
+        <p class="flash success"><?= session()->getFlashdata('success') ?></p>
+      <?php endif; ?>
 
       <form action="/auth/updatePassword" method="post">
         <div class="input-group">
-          <label for="New_Password">New Password</label>
-          <input type="Password" name="password" id="password" placeholder="Masukkan Password Baru" required>
+          <label for="password">New Password</label>
+          <input type="password" name="new_password" id="password" placeholder="Masukkan Password Baru" required>
         </div>
         <div class="input-group">
-          <label for="Confirm_Password">Confirm</label>
-          <input type="Confirm" name="confirm" id="confirm" placeholder="Confirm password" required>
+          <label for="confirm_password">Confirm</label>
+          <input type="password" name="confirm_password" id="confirm_password" placeholder="Confirm password" required>
         </div>
         <button type="submit">Update Password</button>
       </form>
@@ -209,8 +212,3 @@
   </div>
 </body>
 </html>
-
-
-      
-
-      

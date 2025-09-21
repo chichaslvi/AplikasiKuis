@@ -37,6 +37,10 @@
         <input type="text" id="role" name="role" class="form-control" value="Agent" readonly>
       </div>
 
+      <!-- Hidden default untuk aturan password -->
+      <input type="hidden" name="must_change_password" value="1">
+      <input type="hidden" name="last_password_change" value="">
+
       <!-- Dropdown Kategori Agent -->
       <div class="form-group">
         <label for="kategori_agent_id">Kategori Agent</label>

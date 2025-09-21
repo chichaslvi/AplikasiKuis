@@ -98,3 +98,17 @@ $routes->group('admin', function($routes) {
     $routes->get('roles/destroyKategori/(:num)', 'RoleController::destroyKategori/$1');
     $routes->get('roles/destroyTeam/(:num)', 'RoleController::destroyTeam/$1');
 });
+
+// ==================
+// Reviewer Routes
+// ==================
+$routes->group('reviewer', function($routes) {
+    $routes->get('dashboard', 'Dashboard::reviewer');
+});
+
+// ==================
+// Agent Routes
+// ==================
+$routes->group('agent', function($routes) {
+    $routes->get('dashboard', 'Dashboard::agent');
+});

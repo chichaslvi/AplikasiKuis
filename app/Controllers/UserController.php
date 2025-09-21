@@ -55,11 +55,18 @@ class UserController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        // hash password sebelum insert
+        $rawPassword = $this->request->getPost('password');
+        $hashedPassword = password_hash($rawPassword, PASSWORD_DEFAULT);
+
         $data = [
-            'nama'     => $this->request->getPost('nama'),
-            'nik'      => $this->request->getPost('nik'),
-            'password' => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
-            'role'     => $this->request->getPost('role'),
+            'nama'                 => $this->request->getPost('nama'),
+            'nik'                  => $this->request->getPost('nik'),
+            'password'             => $hashedPassword, // sudah di-hash
+            'role'                 => $this->request->getPost('role'),
+            'must_change_password' => 1,
+            'is_active'            => 1,
+            'last_password_change' => date('Y-m-d H:i:s'), // ✅ isi sekarang
         ];
 
         $userModel->insert($data);
@@ -95,13 +102,20 @@ class UserController extends BaseController
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
+        // hash password sebelum insert
+        $rawPassword = $this->request->getPost('password');
+        $hashedPassword = password_hash($rawPassword, PASSWORD_DEFAULT);
+
         $data = [
-            'nama'              => $this->request->getPost('nama'),
-            'nik'               => $this->request->getPost('nik'),
-            'password'          => password_hash($this->request->getPost('password'), PASSWORD_DEFAULT),
-            'role'              => 'agent',
-            'kategori_agent_id' => $this->request->getPost('kategori_agent_id'),
-            'team_leader_id'    => $this->request->getPost('team_leader_id'),
+            'nama'                 => $this->request->getPost('nama'),
+            'nik'                  => $this->request->getPost('nik'),
+            'password'             => $hashedPassword, // sudah di-hash
+            'role'                 => 'agent',
+            'kategori_agent_id'    => $this->request->getPost('kategori_agent_id'),
+            'team_leader_id'       => $this->request->getPost('team_leader_id'),
+            'must_change_password' => 1,
+            'is_active'            => 1,
+            'last_password_change' => date('Y-m-d H:i:s'), // ✅ isi sekarang
         ];
 
         $userModel->insert($data);
@@ -140,7 +154,12 @@ class UserController extends BaseController
         ];
 
         if ($this->request->getPost('password')) {
-            $data['password'] = password_hash($this->request->getPost('password'), PASSWORD_DEFAULT);
+            // hash password sebelum update
+            $rawPassword = $this->request->getPost('password');
+            $data['password'] = password_hash($rawPassword, PASSWORD_DEFAULT);
+
+            $data['last_password_change'] = date('Y-m-d H:i:s'); // ✅ update waktu
+            $data['must_change_password'] = 0;                  // ✅ sudah diganti
         }
 
         if ($user['role'] === 'agent') {
@@ -173,7 +192,7 @@ class UserController extends BaseController
     public function delete($id)
     {
         $userModel = new UserModel();
-        $userModel->delete($id, true); // ✅ hapus permanen, bukan soft delete
+        $userModel->delete($id, true); 
         return redirect()->to('admin/users')->with('success', 'User berhasil dihapus permanen!');
     }
 
@@ -226,7 +245,10 @@ class UserController extends BaseController
 
         $password = $this->request->getPost('password');
         if (!empty($password)) {
-            $data['password'] = password_hash($password, PASSWORD_DEFAULT);
+            // hash password sebelum update
+            $data['password']             = password_hash($password, PASSWORD_DEFAULT);
+            $data['last_password_change'] = date('Y-m-d H:i:s'); // ✅ update waktu
+            $data['must_change_password'] = 0;                  // ✅ sudah diganti
         }
 
         $userModel->update($id, $data);

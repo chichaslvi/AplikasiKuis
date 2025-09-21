@@ -24,10 +24,14 @@ class Auth extends BaseController
         $nik = $this->request->getPost('nik');
         $password = $this->request->getPost('password');
 
-        $user = $this->userModel->where('nik', $nik)->first();
+        // ✅ hanya user aktif yang bisa login
+        $user = $this->userModel
+            ->where('nik', $nik)
+            ->where('is_active', 1)
+            ->first();
 
         if (!$user) {
-            return redirect()->back()->with('error', 'NIK tidak ditemukan');
+            return redirect()->back()->with('error', 'NIK tidak ditemukan atau akun tidak aktif');
         }
 
         if (!password_verify($password, $user['password'])) {
@@ -40,13 +44,13 @@ class Auth extends BaseController
             return redirect()->to('/auth/changePassword')->with('info', 'Silakan ubah password Anda.');
         }
 
-        // 2. Cek masa berlaku password (6 bulan)
+        // 2. Cek masa berlaku password (180 hari ≈ 6 bulan)
         if ($user['last_password_change']) {
             $lastChange = new DateTime($user['last_password_change']);
             $now = new DateTime();
-            $diff = $lastChange->diff($now);
+            $days = $lastChange->diff($now)->days;
 
-            if ($diff->m >= 6 || $diff->y > 0) {
+            if ($days >= 180) {
                 session()->set('temp_user_id', $user['id']);
                 return redirect()->to('/auth/changePassword')->with('info', 'Password sudah lebih dari 6 bulan, ubah password dulu.');
             }
