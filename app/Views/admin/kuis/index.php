@@ -64,7 +64,7 @@
         <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-red btn-sm"
            onclick="return confirm('Yakin hapus kuis ini?')">HAPUS</a>
         <a href="<?= base_url('admin/kuis/archive/' . $row['id_kuis']) ?>" class="btn btn-dark btn-sm">ARCHIVE</a>
-
+      
       </td>
     </tr>
   <?php endforeach; ?>

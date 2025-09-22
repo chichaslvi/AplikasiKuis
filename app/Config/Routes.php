@@ -39,8 +39,9 @@ $routes->group('admin', function($routes) {
     $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
     $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1');
-    $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
+    $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
+
 
     // ==================
     // Manajemen User

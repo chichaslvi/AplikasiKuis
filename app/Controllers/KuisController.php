@@ -4,8 +4,11 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\KuisModel;
+use App\Models\SoalModel;
 use App\Models\KategoriAgentModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;   // ✅ tambahin ini
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class KuisController extends BaseController
 {
@@ -104,6 +107,7 @@ class KuisController extends BaseController
                     'pilihan_b'   => $row[2] ?? null,
                     'pilihan_c'   => $row[3] ?? null,
                     'pilihan_d'   => $row[4] ?? null,
+                    'pilihan_e'   => $row[4] ?? null,
                     'jawaban'     => $row[5] ?? null,
                 ];
             }
@@ -205,28 +209,50 @@ class KuisController extends BaseController
         return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil dihapus.');
     }
 
-    public function archive($id)
-{
-    $kuisModel = new KuisModel();
-    $kuis = $kuisModel->find($id);
+   public function archive($id_kuis)
+    {
+        $soalModel = new SoalModel();
+        $dataSoal = $soalModel->where('id_kuis', $id_kuis)->findAll();
 
-    // Pastikan kuis ada dan file_excel ada
-    if (!$kuis || empty($kuis['file_excel'])) {
-        return redirect()->back()->with('error', 'File arsip tidak ditemukan.');
+        if (empty($dataSoal)) {
+            return redirect()->back()->with('error', 'Soal untuk kuis ini tidak ditemukan.');
+        }
+
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Header kolom
+        $sheet->setCellValue('A1', 'soal');
+        $sheet->setCellValue('B1', 'pilihan_a');
+        $sheet->setCellValue('C1', 'pilihan_b');
+        $sheet->setCellValue('D1', 'pilihan_c');
+        $sheet->setCellValue('E1', 'pilihan_d');
+        $sheet->setCellValue('F1', 'pilihan_e');
+        $sheet->setCellValue('G1', 'jawaban');
+
+        // Isi data mulai baris ke-2
+        $row = 2;
+        foreach ($dataSoal as $soal) {
+            $sheet->setCellValue('A'.$row, $soal['soal']);
+            $sheet->setCellValue('B'.$row, $soal['pilihan_a']);
+            $sheet->setCellValue('C'.$row, $soal['pilihan_b']);
+            $sheet->setCellValue('D'.$row, $soal['pilihan_c']);
+            $sheet->setCellValue('E'.$row, $soal['pilihan_d']);
+            $sheet->setCellValue('F'.$row, $soal['pilihan_e']);
+            $sheet->setCellValue('G'.$row, $soal['jawaban']);
+            $row++;
+        }
+
+        // Nama file sesuai id_kuis
+        $fileName = 'arsip_soal_kuis_' . $id_kuis . '_' . date('Y-m-d') . '.xlsx';
+
+        // Header untuk download
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="'. $fileName .'"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
-
-    $filePath = WRITEPATH . 'uploads/' . $kuis['file_excel'];
-
-    // Cek file fisik
-    if (!file_exists($filePath)) {
-        return redirect()->back()->with('error', 'File tidak tersedia di server.');
-    }
-
-    // Set headers untuk download / buka di browser
-    return $this->response
-        ->setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        ->setHeader('Content-Disposition', 'inline; filename="' . $kuis['file_excel'] . '"')
-        ->setBody(file_get_contents($filePath));
-}
-
 }
