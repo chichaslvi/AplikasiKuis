@@ -40,11 +40,7 @@ $routes->group('admin', function($routes) {
     $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1');
     $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
-
-
-
-    $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
-     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
+    $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
 
     // ==================
     // Manajemen User
@@ -111,5 +107,12 @@ $routes->group('reviewer', function($routes) {
 // Agent Routes
 // ==================
 $routes->group('agent', function($routes) {
-    $routes->get('dashboard', 'Dashboard::agent');
+    $routes->get('dashboard', 'Agent::dashboard');
+    $routes->get('soal', 'Agent::soal');
 });
+
+// ==================
+// Alias untuk akses cepat (opsional)
+// ==================
+$routes->get('dashboard', 'Agent::dashboard'); // alias /dashboard
+$routes->get('soal', 'Agent::soal');           // alias /soal
