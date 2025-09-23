@@ -42,7 +42,6 @@ $routes->group('admin', function($routes) {
     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
     $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
 
-
     // ==================
     // Manajemen User
     // ==================
@@ -117,3 +116,5 @@ $routes->group('agent', function($routes) {
 // ==================
 $routes->get('dashboard', 'Agent::dashboard'); // alias /dashboard
 $routes->get('soal', 'Agent::soal');           // alias /soal
+$routes->get('ulangi-quiz', 'Agent::ulangiQuiz'); // alias /ulangi-quiz
+$routes->get('/riwayat', 'Agent::riwayat');

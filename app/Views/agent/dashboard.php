@@ -1,12 +1,11 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Agent</title>
-  <!-- Bootstrap CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<?= $this->include('layout/agent/navbar'); ?>
+<?= $this->section('content') ?>
+
+<title>Dashboard Agent</title>
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
 <style>
   body {
     background-color: #f8f9fa;
@@ -20,8 +19,6 @@
     background-color: white;
     border-bottom: 1px solid #ddd;
   }
-
-  /* Navbar link */
   .nav-link {
     color: #333;
     transition: all 0.2s ease;
@@ -29,15 +26,13 @@
   .nav-link:hover {
     color: #0072c6;
   }
-  /* Biar Beranda lebih nonjol */
   .nav-link.active {
     font-weight: 700;
     color: #0072c6 !important;
     border-bottom: 2px solid #0072c6;
   }
-
   .main-section {
-    background: linear-gradient(180deg, #0072c6, #005a99); /* gradient biru */
+    background: linear-gradient(180deg, #0072c6, #005a99);
     padding: 70px 20px 50px;
     color: white;
     flex: 1;
@@ -47,14 +42,13 @@
     background: white;
     color: #333;
     padding: 25px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12); /* bayangan 3D */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
   .card-custom:hover {
-    transform: translateY(-5px); /* efek naik saat hover */
+    transform: translateY(-5px);
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
   }
-  /* Profil */
   .profile-info p {
     margin-bottom: 12px;
     padding-bottom: 6px;
@@ -66,20 +60,19 @@
     color: #0d0e0fff;
   }
   .profile-card {
-    width: 115%;      
+    width: 115%;
     max-width: 420px;
-    margin-left: -15px; /* geser profil lebih kiri */
+    margin-left: -15px;
   }
   .col-md-4 h4 {
-    margin-left: -15px; /* judul profil ikut kiri */
+    margin-left: -15px;
   }
-  /* Kuis */
   .quiz-card {
-    max-width: 600px;   /* lebih pendek */
-    margin-left: 60px;  /* tetap geser ke kanan */
+    max-width: 600px;
+    margin-left: 60px;
   }
   .col-md-8 h4 {
-    margin-left: 60px; /* judul daftar kuis ikut kanan */
+    margin-left: 60px;
   }
   .quiz-item {
     display: flex;
@@ -119,23 +112,6 @@
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg">
-    <div class="container">
-      <a class="navbar-brand fw-bold" href="#">
-        <img src="logo.png" alt="Melisa Logo" height="32" class="me-2"> Melisa
-      </a>
-      <div class="collapse navbar-collapse justify-content-end">
-        <ul class="navbar-nav">
-          <li class="nav-item"><a class="nav-link active" href="#">Beranda</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Riwayat</a></li>
-          <li class="nav-item"><a class="nav-link" href="#">Ganti Password</a></li>
-          <li class="nav-item"><a class="nav-link" href="/auth/logout">Logout</a></li>
-        </ul>
-      </div>
-    </div>
-  </nav>
-
   <!-- Main -->
   <div class="main-section">
     <div class="container">
@@ -155,25 +131,24 @@
         </div>
 
         <!-- Daftar Kuis -->
-<div class="col-md-8">
-  <h4 class="mb-3">Daftar Kuis</h4>
-  <div class="card-custom quiz-card">
-    <div class="quiz-item">
-      <div class="quiz-details">
-        <p><b>Kuis A</b></p>
-        <p>Sub Soal : Kuis Peningkatan Mutu</p>
-        <small class="text-muted">
-          <i class="bi bi-calendar-event me-1"></i> Kamis, 25 Januari 2024 &nbsp;&nbsp;
-          <i class="bi bi-clock me-1"></i> 11:00 - 12:00
-        </small>
-      </div>
-      <a href="<?= base_url('soal'); ?>" class="btn btn-start">
-        <i class="bi bi-play-circle me-1"></i> Mulai
-      </a>
-    </div>
-  </div>
-</div>
-
+        <div class="col-md-8">
+          <h4 class="mb-3">Daftar Kuis</h4>
+          <div class="card-custom quiz-card">
+            <div class="quiz-item">
+              <div class="quiz-details">
+                <p><b>Kuis A</b></p>
+                <p>Sub Soal : Kuis Peningkatan Mutu</p>
+                <small class="text-muted">
+                  <i class="bi bi-calendar-event me-1"></i> Kamis, 25 Januari 2024 &nbsp;&nbsp;
+                  <i class="bi bi-clock me-1"></i> 11:00 - 12:00
+                </small>
+              </div>
+              <a href="<?= base_url('soal'); ?>" class="btn btn-start">
+                <i class="bi bi-play-circle me-1"></i> Mulai
+              </a>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
