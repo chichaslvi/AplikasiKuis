@@ -2,7 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Models\UserModel; // ✅ tambahkan ini biar bisa pakai UserModel
+use App\Models\UserModel;
+use App\Models\KuisModel;
 
 class Dashboard extends BaseController
 {
@@ -16,19 +17,34 @@ class Dashboard extends BaseController
             'countAgent'    => $userModel->where('role', 'agent')->countAllResults(),
         ];
 
-        // Arahkan ke view: app/Views/dashboard/admin.php
         return view('admin/dashboard', $data);
     }
 
     public function reviewer()
     {
-        // Arahkan ke view: app/Views/dashboard/reviewer.php
-        return view('reviewer/dashboard');
+        $userModel = new UserModel();
+        $kuisModel = new KuisModel();
+
+        $data = [
+            'countAdmin'    => $userModel->where('role', 'admin')->countAllResults(),
+            'countReviewer' => $userModel->where('role', 'reviewer')->countAllResults(),
+            'countAgent'    => $userModel->where('role', 'agent')->countAllResults(),
+            'countKuis'     => $kuisModel->countAllResults(),
+        ];
+
+        return view('reviewer/dashboard', $data);
     }
 
     public function agent()
     {
-        // Arahkan ke view: app/Views/dashboard/agent.php
-        return view('agent/dashboard');
+        $userModel = new UserModel();
+
+        $data = [
+            'countAgent'    => $userModel->where('role', 'agent')->countAllResults(),
+            'countReviewer' => $userModel->where('role', 'reviewer')->countAllResults(),
+            'countAdmin'    => $userModel->where('role', 'admin')->countAllResults(),
+        ];
+
+        return view('agent/dashboard', $data);
     }
 }
