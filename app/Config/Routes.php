@@ -112,6 +112,9 @@ $routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes
 $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('dashboard', 'Agent::dashboard');
     $routes->get('soal', 'Agent::soal');
+    $routes->get('kuis/(:num)', 'Agent::detailKuis/$1');
+    $routes->get('soal/(:num)', 'Agent::soal/$1');
+
 });
 
 // ==================

@@ -7,7 +7,7 @@ use App\Models\KuisModel;
 use App\Models\SoalModel;
 use App\Models\KategoriAgentModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;   // ✅ tambahin ini
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class KuisController extends BaseController
@@ -27,66 +27,65 @@ class KuisController extends BaseController
         ");
 
         $data['kuis'] = $query->getResultArray();
+
+        // Update status setiap kali index dibuka
+        $this->updateStatusKuis($data['kuis']);
+
         return view('admin/kuis/index', $data);
     }
 
- public function create()
+    public function create()
     {
         $kategoriModel = new KategoriAgentModel();
-
-        // Ambil hanya kategori aktif (is_active = 1)
         $data['kategori'] = $kategoriModel->where('is_active', 1)->findAll();
-
         return view('admin/kuis/create', $data);
     }
-   public function store_kuis() 
-{
-    $kuisModel = new KuisModel();
-    $db = \Config\Database::connect();
 
-    $fileExcel = $this->request->getFile('file_excel');
+    public function store_kuis()
+    {
+        $kuisModel = new KuisModel();
+        $db = \Config\Database::connect();
 
-    $dataKuis = [
-        'nama_kuis'         => $this->request->getPost('nama_kuis'),
-        'topik'             => $this->request->getPost('topik'),
-        'tanggal'           => $this->request->getPost('tanggal_pelaksanaan'),
-        'waktu_mulai'       => $this->request->getPost('waktu_mulai'),
-        'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
-        'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
-        'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-        'file_excel'        => null // default null
-    ];
+        $fileExcel = $this->request->getFile('file_excel');
 
-    // Upload file Excel jika ada
-    if ($fileExcel && $fileExcel->isValid() && !$fileExcel->hasMoved()) {
-        $newName = $fileExcel->getRandomName();
-        $fileExcel->move(WRITEPATH . 'uploads', $newName);
-        $dataKuis['file_excel'] = $newName;
-    }
+        $dataKuis = [
+            'nama_kuis'         => $this->request->getPost('nama_kuis'),
+            'topik'             => $this->request->getPost('topik'),
+            'tanggal'           => $this->request->getPost('tanggal_pelaksanaan'),
+            'waktu_mulai'       => $this->request->getPost('waktu_mulai'),
+            'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
+            'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
+            'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
+            'status'            => 'upcoming',
+            'file_excel'        => null
+        ];
 
-    // Insert kuis
-    $idKuis = $kuisModel->insert($dataKuis);
-
-    // Insert pivot kategori
-    $kategoriDipilih = $this->request->getPost('id_kategori');
-    if ($kategoriDipilih && is_array($kategoriDipilih)) {
-        $pivot = [];
-        foreach ($kategoriDipilih as $idKat) {
-            $pivot[] = [
-                'id_kuis'     => $idKuis,
-                'id_kategori' => $idKat
-            ];
+        if ($fileExcel && $fileExcel->isValid() && !$fileExcel->hasMoved()) {
+            $newName = $fileExcel->getRandomName();
+            $fileExcel->move(WRITEPATH . 'uploads', $newName);
+            $dataKuis['file_excel'] = $newName;
         }
-        $db->table('kuis_kategori')->insertBatch($pivot);
-    }
 
-    // Import soal dari Excel jika ada
-    if (!empty($dataKuis['file_excel'])) {
-        $this->importSoal($idKuis, WRITEPATH . 'uploads/' . $dataKuis['file_excel']);
-    }
+        $idKuis = $kuisModel->insert($dataKuis);
 
-    return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil ditambahkan.');
-}
+        $kategoriDipilih = $this->request->getPost('id_kategori');
+        if ($kategoriDipilih && is_array($kategoriDipilih)) {
+            $pivot = [];
+            foreach ($kategoriDipilih as $idKat) {
+                $pivot[] = [
+                    'id_kuis'     => $idKuis,
+                    'id_kategori' => $idKat
+                ];
+            }
+            $db->table('kuis_kategori')->insertBatch($pivot);
+        }
+
+        if (!empty($dataKuis['file_excel'])) {
+            $this->importSoal($idKuis, WRITEPATH . 'uploads/' . $dataKuis['file_excel']);
+        }
+
+        return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil ditambahkan.');
+    }
 
     private function importSoal($idKuis, $filePath)
     {
@@ -96,10 +95,9 @@ class KuisController extends BaseController
         $rows = $sheet->toArray();
 
         $soalData = [];
-        // Asumsikan baris pertama adalah header
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
-            if (!empty($row[0])) { // Cek kolom soal tidak kosong
+            if (!empty($row[0])) {
                 $soalData[] = [
                     'id_kuis'     => $idKuis,
                     'soal'        => $row[0],
@@ -107,8 +105,8 @@ class KuisController extends BaseController
                     'pilihan_b'   => $row[2] ?? null,
                     'pilihan_c'   => $row[3] ?? null,
                     'pilihan_d'   => $row[4] ?? null,
-                    'pilihan_e'   => $row[4] ?? null,
-                    'jawaban'     => $row[5] ?? null,
+                    'pilihan_e'   => $row[5] ?? null,
+                    'jawaban'     => $row[6] ?? null,
                 ];
             }
         }
@@ -119,29 +117,24 @@ class KuisController extends BaseController
     }
 
     public function edit($id)
-{
-    $kuisModel = new KuisModel();
-    $kategoriModel = new KategoriAgentModel();
+    {
+        $kuisModel = new KuisModel();
+        $kategoriModel = new KategoriAgentModel();
 
-    // Ambil data kuis
-    $data['kuis'] = $kuisModel->find($id);
-    if (!$data['kuis']) {
-        throw new \CodeIgniter\Exceptions\PageNotFoundException("Kuis dengan ID $id tidak ditemukan.");
+        $data['kuis'] = $kuisModel->find($id);
+        if (!$data['kuis']) {
+            throw new \CodeIgniter\Exceptions\PageNotFoundException("Kuis dengan ID $id tidak ditemukan.");
+        }
+
+        $data['kategori'] = $kategoriModel->where('is_active', 1)->findAll();
+        $db = \Config\Database::connect();
+        $data['kuisKategori'] = $db->table('kuis_kategori')
+                                   ->where('id_kuis', $id)
+                                   ->get()
+                                   ->getResultArray();
+
+        return view('admin/kuis/edit', $data);
     }
-
-    // Ambil hanya kategori aktif
-    $data['kategori'] = $kategoriModel->where('is_active', 1)->findAll();
-
-    // Ambil kategori yang sudah dipilih dari pivot table kuis_kategori
-    $db = \Config\Database::connect();
-    $data['kuisKategori'] = $db->table('kuis_kategori')
-                               ->where('id_kuis', $id)
-                               ->get()
-                               ->getResultArray();
-
-    return view('admin/kuis/edit', $data);
-}
-
 
     public function update($id)
     {
@@ -164,16 +157,12 @@ class KuisController extends BaseController
             $fileExcel->move(WRITEPATH . 'uploads', $newName);
             $data['file_excel'] = $newName;
 
-            // Hapus soal lama
             $db->table('soal_kuis')->where('id_kuis', $id)->delete();
-
-            // Import soal baru
             $this->importSoal($id, WRITEPATH . 'uploads/' . $newName);
         }
 
         $kuisModel->update($id, $data);
 
-        // Update pivot kategori
         $db->table('kuis_kategori')->where('id_kuis', $id)->delete();
         $kategoriDipilih = $this->request->getPost('id_kategori');
         if ($kategoriDipilih) {
@@ -190,11 +179,28 @@ class KuisController extends BaseController
         return redirect()->to('/admin/kuis')->with('success', 'Data kuis berhasil diperbarui.');
     }
 
-    public function upload($id)
+    private function updateStatusKuis($kuisList)
     {
         $kuisModel = new KuisModel();
-        $kuisModel->update($id, ['status' => 'active']);
-        return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil diaktifkan.');
+        $now = date('Y-m-d H:i:s');
+
+        foreach ($kuisList as $kuis) {
+            $mulai   = $kuis['tanggal'] . ' ' . $kuis['waktu_mulai'];
+            $selesai = $kuis['tanggal'] . ' ' . $kuis['waktu_selesai'];
+            $status  = $kuis['status'];
+
+            if ($now < $mulai) {
+                $newStatus = 'upcoming';
+            } elseif ($now >= $mulai && $now <= $selesai) {
+                $newStatus = 'active';
+            } else {
+                $newStatus = 'inactive';
+            }
+
+            if ($status !== $newStatus) {
+                $kuisModel->update($kuis['id_kuis'], ['status' => $newStatus]);
+            }
+        }
     }
 
     public function delete($id)
@@ -209,7 +215,7 @@ class KuisController extends BaseController
         return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil dihapus.');
     }
 
-   public function archive($id_kuis)
+    public function archive($id_kuis)
     {
         $soalModel = new SoalModel();
         $dataSoal = $soalModel->where('id_kuis', $id_kuis)->findAll();
@@ -221,7 +227,6 @@ class KuisController extends BaseController
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
-        // Header kolom
         $sheet->setCellValue('A1', 'soal');
         $sheet->setCellValue('B1', 'pilihan_a');
         $sheet->setCellValue('C1', 'pilihan_b');
@@ -230,7 +235,6 @@ class KuisController extends BaseController
         $sheet->setCellValue('F1', 'pilihan_e');
         $sheet->setCellValue('G1', 'jawaban');
 
-        // Isi data mulai baris ke-2
         $row = 2;
         foreach ($dataSoal as $soal) {
             $sheet->setCellValue('A'.$row, $soal['soal']);
@@ -243,10 +247,8 @@ class KuisController extends BaseController
             $row++;
         }
 
-        // Nama file sesuai id_kuis
         $fileName = 'arsip_soal_kuis_' . $id_kuis . '_' . date('Y-m-d') . '.xlsx';
 
-        // Header untuk download
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="'. $fileName .'"');
         header('Cache-Control: max-age=0');

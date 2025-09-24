@@ -5,7 +5,7 @@ use CodeIgniter\Model;
 
 class SoalModel extends Model
 {
-    protected $table      = 'soal_kuis';   // ✅ sesuaikan dengan nama tabel di database
+    protected $table      = 'soal_kuis';  
     protected $primaryKey = 'id_soal';
 
     protected $allowedFields = [

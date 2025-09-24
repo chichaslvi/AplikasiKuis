@@ -100,6 +100,7 @@
 }
 .badge.active { background: var(--success-color); }
 .badge.inactive { background: #6c757d; }
+.badge.upcoming { background: var(--primary-color); }
 
 /* alert sukses */
 .alert-success {
@@ -175,12 +176,14 @@
           <td><?= esc($row['batas_pengulangan']) ?></td>
           <td><?= esc($row['kategori']) ?></td>
           <td>
-            <?php if (isset($row['status']) && $row['status'] == 'active') : ?>
-              <span class="badge active">Active</span>
-            <?php else : ?>
-              <span class="badge inactive">Inactive</span>
-            <?php endif; ?>
-          </td>
+  <?php if ($row['status'] === 'active') : ?>
+    <span class="badge active">Active</span>
+  <?php elseif ($row['status'] === 'upcoming') : ?>
+    <span class="badge upcoming">Upcoming</span>
+  <?php else : ?>
+    <span class="badge inactive">Inactive</span>
+  <?php endif; ?>
+</td>
           <td class="action-buttons">
             <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>" class="btn btn-blue btn-sm">UPLOAD</a>
             <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-green btn-sm">EDIT</a>
