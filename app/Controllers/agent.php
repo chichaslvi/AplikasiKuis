@@ -6,6 +6,15 @@ use App\Controllers\BaseController;
 
 class Agent extends BaseController
 {
+    public function __construct()
+    {
+        // Pastikan hanya agent yang bisa akses controller ini
+        if (session()->get('role') !== 'agent') {
+            redirect()->to('/login')->send();
+            exit;
+        }
+    }
+
     public function dashboard()
     {
         // tampilkan view dashboard agent

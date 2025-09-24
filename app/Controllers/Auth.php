@@ -14,14 +14,20 @@ class Auth extends BaseController
         $this->userModel = new UserModel();
     }
 
+    // =========================
+    // TAMPILAN FORM LOGIN
+    // =========================
     public function login()
     {
         return view('auth/login');
     }
 
+    // =========================
+    // PROSES LOGIN
+    // =========================
     public function doLogin()
     {
-        $nik = $this->request->getPost('nik');
+        $nik      = $this->request->getPost('nik');
         $password = $this->request->getPost('password');
 
         // ✅ hanya user aktif yang bisa login
@@ -57,13 +63,17 @@ class Auth extends BaseController
         }
 
         // 3. Jika valid -> login normal
-        session()->set([
-            'user_id'    => $user['id'],
-            'nama'       => $user['nama'],   // <--- simpan nama user
-            'nik'        => $user['nik'],    // <--- simpan NIK user
-            'role'       => $user['role'],
-            'isLoggedIn' => true             // konsisten dengan penamaan awal
-        ]);
+session()->regenerate();
+
+session()->set([
+    'user_id'    => $user['id'],
+    'username'   => $user['username'] ?? null,
+    'nama'       => $user['nama'],
+    'nik'        => $user['nik'],
+    'role'       => $user['role'],
+    'isLoggedIn' => true
+]);
+
 
         // Redirect sesuai role
         switch (strtolower($user['role'])) {
@@ -78,16 +88,22 @@ class Auth extends BaseController
         }
     }
 
+    // =========================
+    // FORM GANTI PASSWORD
+    // =========================
     public function changePassword()
     {
         return view('auth/change_password');
     }
 
+    // =========================
+    // PROSES UPDATE PASSWORD
+    // =========================
     public function updatePassword()
     {
-        $newPass = $this->request->getPost('new_password');
+        $newPass     = $this->request->getPost('new_password');
         $confirmPass = $this->request->getPost('confirm_password');
-        $userId = session()->get('temp_user_id');
+        $userId      = session()->get('temp_user_id');
 
         if ($newPass !== $confirmPass) {
             return redirect()->back()->with('error', 'Password tidak sama!');
@@ -104,6 +120,9 @@ class Auth extends BaseController
         return redirect()->to('/')->with('success', 'Password berhasil diubah, silakan login kembali.');
     }
 
+    // =========================
+    // LOGOUT
+    // =========================
     public function logout()
     {
         session()->destroy();

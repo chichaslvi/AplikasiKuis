@@ -7,18 +7,21 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // ==================
+// ==================
 // Default (root URL) diarahkan ke login
 // ==================
 $routes->get('/', 'Auth::login');
+$routes->get('login', 'Auth::login');   // alias biar /login bisa dipakai
 $routes->post('auth/doLogin', 'Auth::doLogin');
 $routes->get('auth/changePassword', 'Auth::changePassword');
 $routes->post('auth/updatePassword', 'Auth::updatePassword');
 $routes->get('auth/logout', 'Auth::logout');
 
+
 // ==================
 // Admin Routes
 // ==================
-$routes->group('admin', function($routes) {
+$routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
 
     // ==================
     // Dashboard & General
@@ -99,14 +102,14 @@ $routes->group('admin', function($routes) {
 // ==================
 // Reviewer Routes
 // ==================
-$routes->group('reviewer', function($routes) {
+$routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes) {
     $routes->get('dashboard', 'Dashboard::reviewer');
 });
 
 // ==================
 // Agent Routes
 // ==================
-$routes->group('agent', function($routes) {
+$routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('dashboard', 'Agent::dashboard');
     $routes->get('soal', 'Agent::soal');
 });
