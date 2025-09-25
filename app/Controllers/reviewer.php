@@ -16,20 +16,25 @@ class Reviewer extends BaseController
     }
 
     public function dashboard()
-    {
-        // tampilkan view dashboard reviewer
-        return view('reviewer/dashboard');
-    }
+{
+    // contoh data notifikasi (nanti bisa ambil dari DB kalau sudah ada tabel notifikasi)
+    $notifikasi = [
+        [
+            'judul' => 'Ada kuis baru menunggu review',
+            'created_at' => '2025-09-24 14:30:00'
+        ],
+        [
+            'judul' => 'Deadline review Batch 2 besok',
+            'created_at' => '2025-09-23 09:15:00'
+        ],
+        [
+            'judul' => 'Sistem maintenance jam 22:00',
+            'created_at' => '2025-09-22 20:00:00'
+        ],
+    ];
 
-    public function laporan()
-    {
-        // tampilkan view laporan reviewer
-        return view('reviewer/laporan');
-    }
-
-    public function detailLaporan($id)
-    {
-        // contoh untuk menampilkan detail laporan
-        return view('reviewer/detail_laporan', ['id' => $id]);
-    }
+    return view('reviewer/dashboard', [
+        'notifikasi' => $notifikasi
+    ]);
+}
 }

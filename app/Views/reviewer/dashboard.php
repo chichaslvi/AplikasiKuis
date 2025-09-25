@@ -3,11 +3,11 @@
 <style>
 /* Wrapper konten biar ga ketiban header & sidebar */
 .dashboard-wrapper {
-  margin-left: 250px;       /* jarak dari sidebar */
-  margin-top: 60px;         /* jarak dari navbar */
+  margin-left: 250px;
+  margin-top: 60px;
   padding: 20px 30px;
   min-height: calc(100vh - 60px);
-  background: #f9f9f9;      /* biar beda dari sidebar */
+  background: #f9f9f9;
 }
 
 /* Profile Card */
@@ -42,59 +42,61 @@
   border-bottom: none;            
 }
 
-/* biar label sejajar */
 .profile-info .label {
   display: inline-block;
   width: 70px; 
 }
 
-/* Stats Section */
-.stats h2 { 
-  font-size: 18px; 
-  margin: 15px 0; 
+/* Notifikasi Section */
+.notif-box {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  max-width: 700px;
 }
 
-.stats-cards { 
-  display: flex; 
-  gap: 18px; 
-  flex-wrap: wrap;   /* biar responsive */
+.notif-box h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
 }
 
-.stat-card { 
-  flex: 1 1 120px; 
-  background: white; 
-  border-radius: 10px; 
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  text-align: center;
-  padding: 8px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  min-width: 120px;
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+  transition: background 0.2s;
 }
 
-.stat-card:hover {
-  transform: translateY(-6px) scale(1.05);
-  box-shadow: 0 8px 18px rgba(0,0,0,0.25);
+.notif-item:last-child {
+  border-bottom: none;
 }
 
-.stat-card .inner { 
-  background: #0070C0; 
-  color: white; 
-  padding: 12px; 
-  border-radius: 6px; 
+.notif-item:hover {
+  background: #f5f9ff;
 }
 
-.stat-card .number {
-  font-size: 16px;
-  font-weight: bold;
-  border-bottom: 1px solid white;  
-  margin-bottom: 5px;
-  padding-bottom: 4px;
+.notif-icon {
+  font-size: 22px;
+  color: #0070C0;
 }
 
-.stat-card .label {
-  font-size: 13px;
-  font-weight: 500;
+.notif-content {
+  flex: 1;
+}
+
+.notif-title {
+  font-weight: 600;
+  margin: 0;
+  font-size: 14px;
+}
+
+.notif-time {
+  font-size: 12px;
+  color: #777;
+  margin-top: 4px;
 }
 </style>
 
@@ -108,35 +110,23 @@
     </div>
   </div>
 
-  <!-- Statistik Sistem -->
-  <div class="stats">
-    <h2>Statistik Sistem</h2>
-    <div class="stats-cards">
-      <div class="stat-card">
-        <div class="inner">
-          <div class="number"><?= $countAdmin ?></div>
-          <div class="label">Admin</div>
+  <!-- Notifikasi -->
+  <div class="notif-box">
+    <h2>Notifikasi Terbaru</h2>
+
+    <?php if (!empty($notifikasi)): ?>
+      <?php foreach ($notifikasi as $n): ?>
+        <div class="notif-item">
+          <div class="notif-icon">🔔</div>
+          <div class="notif-content">
+            <p class="notif-title"><?= esc($n['judul']) ?></p>
+            <p class="notif-time"><?= date('d M Y H:i', strtotime($n['created_at'])) ?></p>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="inner">
-          <div class="number"><?= $countReviewer ?></div>
-          <div class="label">Reviewer</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="inner">
-          <div class="number"><?= $countAgent ?></div>
-          <div class="label">Agent</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="inner">
-          <div class="number"><?= $countKuis ?></div>
-          <div class="label">Kuis</div>
-        </div>
-      </div>
-    </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <p>Tidak ada notifikasi terbaru.</p>
+    <?php endif; ?>
   </div>
 </div>
 <?= $this->endSection() ?>
