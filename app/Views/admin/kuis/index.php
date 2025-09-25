@@ -117,7 +117,7 @@
 .action-buttons {
     display: flex;
     justify-content: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 5px;
 }
 

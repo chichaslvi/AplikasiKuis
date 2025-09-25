@@ -8,17 +8,8 @@
 
   <!-- Modular CSS -->
   <link rel="stylesheet" href="<?= base_url('css/reviewer/sidebar.css') ?>">
-
-  <style>
-    /* Perbaikan area konten utama */
-    .main {
-      margin-left: 250px;         /* biar ga ketiban sidebar */
-      margin-top: 60px;           /* biar ga ketiban navbar */
-      padding: 20px 30px;         /* jarak dalam */
-      min-height: calc(100vh - 60px);
-      background: #f9f9f9;
-    }
-  </style>
+  <link rel="stylesheet" href="<?= base_url('css/reviewer/navbar.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/reviewer/main.css') ?>">
 </head>
 <body>
 
