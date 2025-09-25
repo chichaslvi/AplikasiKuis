@@ -184,9 +184,10 @@
                            class="btn-add"
                            onclick="return confirm('Aktifkan <?= esc($k['nama_kategori']) ?>?')">AKTIFKAN</a>
 
-                        <a href="<?= site_url('admin/roles/destroyKategori/'.$k['id_kategori']) ?>"
-                           class="btn-delete"
-                           onclick="return confirm('Hapus permanen <?= esc($k['nama_kategori']) ?>?')">HAPUS</a>
+                       <a href="<?= site_url('admin/roles/destroyKategori/'.$k['id_kategori']) ?>"
+   class="btn-delete btn-confirm-delete"
+   data-message="Hapus permanen <?= esc($k['nama_kategori']) ?>?">HAPUS</a>
+
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -224,9 +225,9 @@
                            class="btn-add"
                            onclick="return confirm('Aktifkan <?= esc($t['nama']) ?>?')">AKTIFKAN</a>
 
-                        <a href="<?= site_url('admin/roles/destroyTeam/'.$t['id']) ?>"
-                           class="btn-delete"
-                           onclick="return confirm('Hapus permanen <?= esc($t['nama']) ?>?')">HAPUS</a>
+                       <a href="<?= site_url('admin/roles/destroyTeam/'.$t['id']) ?>"
+   class="btn-delete btn-confirm-delete"
+   data-message="Hapus permanen <?= esc($t['nama']) ?>?">HAPUS</a>
                     </div>
                 </div>
             <?php endforeach; ?>
@@ -235,19 +236,32 @@
 </div>
 
 <script>
-document.getElementById("btnAddKategori")?.addEventListener("click", function(e) {
-    if(!document.getElementById("inputKategori").value.trim()){
-        e.preventDefault();
-        alert("Teks tidak boleh kosong!");
-    }
-});
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".btn-confirm-delete").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+            e.preventDefault(); // cegah langsung reload
+            let message = this.getAttribute("data-message") || "Yakin hapus?";
+            if (confirm(message)) {
+                window.location.href = this.getAttribute("href");
+            }
+        });
+    });
 
-document.getElementById("btnAddTeam")?.addEventListener("click", function(e) {
-    if(!document.getElementById("inputTeam").value.trim()){
-        e.preventDefault();
-        alert("Teks tidak boleh kosong!");
-    }
+    document.getElementById("btnAddKategori")?.addEventListener("click", function(e) {
+        if (!document.getElementById("inputKategori").value.trim()) {
+            e.preventDefault();
+            alert("Teks tidak boleh kosong!");
+        }
+    });
+
+    document.getElementById("btnAddTeam")?.addEventListener("click", function(e) {
+        if (!document.getElementById("inputTeam").value.trim()) {
+            e.preventDefault();
+            alert("Teks tidak boleh kosong!");
+        }
+    });
 });
 </script>
+
 
 <?= $this->endSection() ?>

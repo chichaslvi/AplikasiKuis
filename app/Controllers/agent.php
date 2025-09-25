@@ -4,16 +4,41 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use App\Models\KuisModel;
 use App\Models\SoalModel;
+use App\Models\UserModel;
+use CodeIgniter\Exceptions\PageNotFoundException;
 
 class Agent extends BaseController
 {
     protected $kuisModel;
     protected $soalModel;
+    protected $userModel;
 
     public function __construct()
     {
         $this->kuisModel = new KuisModel();
         $this->soalModel = new SoalModel();
+        $this->userModel = new UserModel();
+    }
+
+    /**
+     * Simple check: user harus login dan role = agent.
+     * Mengembalikan RedirectResponse jika gagal, atau null jika oke.
+     */
+    private function ensureAgent()
+    {
+        $session = session();
+        $userId = $session->get('user_id');
+
+        if (!$userId) {
+            return redirect()->to('/auth/login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        $role = strtolower($session->get('role') ?? '');
+        if ($role !== 'agent') {
+            return redirect()->to('/')->with('error', 'Akses ditolak.');
+        }
+
+        return null;
     }
 
     /**
@@ -21,8 +46,24 @@ class Agent extends BaseController
      */
     public function dashboard()
     {
-        // Ambil kuis yang tersedia untuk agent (upcoming & active)
-        $data['kuis'] = $this->kuisModel->getAvailableKuisForAgent();
+        if ($resp = $this->ensureAgent()) {
+            return $resp; // redirect jika belum login / bukan agent
+        }
+
+        $userId = (int) session()->get('user_id');
+        // ✅ ambil user + kategori (nama_kategori) sesuai tabel kamu
+        $user = $this->userModel->getUserWithKategori($userId);
+
+        if (!$user) {
+            // user hilang di DB — logout & arahkan login lagi
+            session()->destroy();
+            return redirect()->to('/auth/login')->with('error', 'User tidak ditemukan, silakan login ulang.');
+        }
+
+        $data = [
+            'user' => $user,
+            'kuis' => $this->kuisModel->getAvailableKuisForAgent(),
+        ];
 
         return view('agent/dashboard', $data);
     }
@@ -30,14 +71,28 @@ class Agent extends BaseController
     /**
      * Detail Kuis
      */
-    public function detailKuis($id)
+    public function detailKuis($id = null)
     {
-        $kuis = $this->kuisModel->getKuisByIdWithKategori($id);
-        if (!$kuis) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Kuis tidak ditemukan");
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
         }
 
-        return view('agent/detail_kuis', ['kuis' => $kuis]);
+        $id = (int) $id;
+        if ($id <= 0) {
+            throw PageNotFoundException::forPageNotFound("ID Kuis tidak valid");
+        }
+
+        $kuis = $this->kuisModel->getKuisByIdWithKategori($id);
+        if (!$kuis) {
+            throw PageNotFoundException::forPageNotFound("Kuis dengan ID {$id} tidak ditemukan");
+        }
+
+        $data = [
+            'user' => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
+            'kuis' => $kuis
+        ];
+
+        return view('agent/detail_kuis', $data);
     }
 
     /**
@@ -45,27 +100,30 @@ class Agent extends BaseController
      */
     public function soal($id_kuis = null)
     {
-        // Bisa ambil dari parameter URL atau query string (?id=1)
-        if ($id_kuis === null) {
-            $id_kuis = $this->request->getGet('id');
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
         }
 
-        if (!$id_kuis) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("ID Kuis tidak ditemukan");
+        $id_kuis = $id_kuis ?? $this->request->getGet('id');
+        $id_kuis = (int) $id_kuis;
+
+        if ($id_kuis <= 0) {
+            throw PageNotFoundException::forPageNotFound("ID Kuis tidak valid");
         }
 
-        // Ambil data kuis
         $kuis = $this->kuisModel->getKuisByIdWithKategori($id_kuis);
         if (!$kuis) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Kuis tidak ditemukan");
+            throw PageNotFoundException::forPageNotFound("Kuis tidak ditemukan");
         }
 
-        // Ambil soal berdasarkan id_kuis
-        $soal = $this->soalModel->where('id_kuis', $id_kuis)->findAll();
+        $soal = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
 
-        return view('agent/soal', [
+        $data = [
+            'user' => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
             'kuis' => $kuis,
             'soal' => $soal
-        ]);
+        ];
+
+        return view('agent/soal', $data);
     }
 }

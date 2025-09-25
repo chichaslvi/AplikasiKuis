@@ -15,10 +15,14 @@
     --text-medium: #555;
     --text-light: #fff;
 }
+html, body {
+    overflow-x: hidden; /* cegah scroll horizontal */
+    max-width: 100%;
+}
 
 /* wrapper */
 .content {
-    padding: 30px 40px;
+    padding: 3px 1px;
     font-family: 'Poppins', sans-serif;
     color: var(--text-dark);
 }
@@ -38,7 +42,7 @@
     box-shadow: 0px 3px 6px rgba(0,0,0,0.08);
     margin-top: 20px;
     width: 100%;
-    overflow-x: auto;
+    overflow-x: hidden; /* ganti dari auto ke hidden */
 }
 
 /* tombol */
@@ -74,14 +78,16 @@
 .table-kuis {
     width: 100%;
     border-collapse: collapse;
-    min-width: 950px;
+    table-layout: auto;   /* biar fleksibel */
 }
 .table-kuis th, .table-kuis td {
     padding: 12px;
     text-align: center;
-    border: 1px solid var(--border-color);
+
     font-size: 13px;
+    white-space: nowrap;  /* opsional: biar teks gak kepotong */
 }
+
 .table-kuis th {
     background: var(--primary-color);
     color: var(--text-light);
@@ -100,7 +106,7 @@
 }
 .badge.active { background: var(--success-color); }
 .badge.inactive { background: #6c757d; }
-.badge.upcoming { background: var(--primary-color); }
+.badge.draft { background: var(--primary-color); }
 
 /* alert sukses */
 .alert-success {
@@ -178,8 +184,8 @@
           <td>
   <?php if ($row['status'] === 'active') : ?>
     <span class="badge active">Active</span>
-  <?php elseif ($row['status'] === 'upcoming') : ?>
-    <span class="badge upcoming">Upcoming</span>
+  <?php elseif ($row['status'] === 'draft') : ?>
+    <span class="badge draft">Draft</span>
   <?php else : ?>
     <span class="badge inactive">Inactive</span>
   <?php endif; ?>

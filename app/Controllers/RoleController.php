@@ -149,31 +149,33 @@ class RoleController extends BaseController
     // =============================
 
     public function destroyKategori($id)
-{
-    $kategoriModel = new KategoriAgentModel();
-    $userModel     = new \App\Models\UserModel();
+    {
+        $kategoriModel = new KategoriAgentModel();
+        $userModel     = new UserModel();
 
-    $kategori = $kategoriModel->find($id);
+        $kategori = $kategoriModel->find($id);
 
-    if (!$kategori) {
-        return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
+        if (!$kategori) {
+            return redirect()->to('/admin/roles')->with('error', 'Kategori tidak ditemukan');
+        }
+
+        // Pastikan sudah nonaktif sebelum hapus permanen
+        if ($kategori['is_active'] == 1) {
+            return redirect()->to('/admin/roles')->with('error', 'Nonaktifkan dulu sebelum hapus permanen');
+        }
+
+        // 🔎 Cek apakah masih ada user aktif pakai kategori ini
+        $users = $userModel->where('kategori_agent_id', $id)->countAllResults();
+        if ($users > 0) {
+            return redirect()->to('/admin/roles')->with('error', 'Masih ada user di kategori ini');
+        }
+
+        // Jika aman, hapus
+        $kategoriModel->delete($id);
+
+        return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil dihapus permanen');
     }
-
-    // Pastikan sudah nonaktif
-    if ($kategori['is_active'] == 1) {
-        return redirect()->to('/admin/roles')->with('error', 'Nonaktifkan dulu sebelum hapus permanen');
-    }
-
-    // 🔎 Cek apakah masih ada user aktif pakai kategori ini
-    $users = $userModel->where('kategori_agent_id', $id)->countAllResults();
-    if ($users > 0) {
-        return redirect()->to('/admin/roles')->with('error', 'Masih ada user di kategori ini');
-    }
-
-    $kategoriModel->delete($id);
-    return redirect()->to('/admin/roles')->with('success', 'Kategori berhasil dihapus permanen');
-}
-
+    
     public function destroyTeam($id)
     {
         $teamModel = new TeamLeaderModel();

@@ -56,7 +56,7 @@ class KuisController extends BaseController
             'waktu_selesai'     => $this->request->getPost('waktu_selesai'),
             'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
             'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-            'status'            => 'upcoming',
+            'status'            => 'draft',
             'file_excel'        => null
         ];
 
@@ -88,33 +88,34 @@ class KuisController extends BaseController
     }
 
     private function importSoal($idKuis, $filePath)
-    {
-        $db = \Config\Database::connect();
-        $spreadsheet = IOFactory::load($filePath);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray();
+{
+    $db = \Config\Database::connect();
+    $spreadsheet = IOFactory::load($filePath);
+    $sheet = $spreadsheet->getActiveSheet();
+    $rows = $sheet->toArray();
 
-        $soalData = [];
-        for ($i = 1; $i < count($rows); $i++) {
-            $row = $rows[$i];
-            if (!empty($row[0])) {
-                $soalData[] = [
-                    'id_kuis'     => $idKuis,
-                    'soal'        => $row[0],
-                    'pilihan_a'   => $row[1] ?? null,
-                    'pilihan_b'   => $row[2] ?? null,
-                    'pilihan_c'   => $row[3] ?? null,
-                    'pilihan_d'   => $row[4] ?? null,
-                    'pilihan_e'   => $row[5] ?? null,
-                    'jawaban'     => $row[6] ?? null,
-                ];
-            }
-        }
-
-        if (!empty($soalData)) {
-            $db->table('soal_kuis')->insertBatch($soalData);
+    $soalData = [];
+    for ($i = 1; $i < count($rows); $i++) { // mulai dari baris ke-2
+        $row = $rows[$i];
+        if (!empty($row[0])) {
+            $soalData[] = [
+                 'id_kuis'   => $idKuis,           // wajib isi
+    'soal'      => $row[0],
+    'pilihan_a' => $row[1] ?? '',
+    'pilihan_b' => $row[2] ?? '',
+    'pilihan_c' => $row[3] ?? '',
+    'pilihan_d' => $row[4] ?? '',
+    'pilihan_e' => $row[5] ?? '',
+    'jawaban'   => $row[6] ?? '',
+];
         }
     }
+
+    if (!empty($soalData)) {
+        $db->table('soal_kuis')->insertBatch($soalData);
+    }
+}
+
 
     public function edit($id)
     {
@@ -190,7 +191,7 @@ class KuisController extends BaseController
             $status  = $kuis['status'];
 
             if ($now < $mulai) {
-                $newStatus = 'upcoming';
+                $newStatus = 'draft';
             } elseif ($now >= $mulai && $now <= $selesai) {
                 $newStatus = 'active';
             } else {
@@ -257,4 +258,25 @@ class KuisController extends BaseController
         $writer->save('php://output');
         exit;
     }
+
+    public function upload($id)
+{
+    $kuisModel = new \App\Models\KuisModel();
+
+    // pastikan kuis ada & statusnya draft
+    $kuis = $kuisModel->find($id);
+    if (!$kuis) {
+        return redirect()->to('/admin/kuis')->with('error', 'Kuis tidak ditemukan.');
+    }
+
+    if ($kuis['status'] !== 'draft') {
+        return redirect()->to('/admin/kuis')->with('error', 'Kuis ini sudah diupload atau nonaktif.');
+    }
+
+    // update status jadi active
+    $kuisModel->uploadKuis($id);
+
+    return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil diupload dan kini dapat dilihat oleh agent.');
+}
+
 }

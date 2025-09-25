@@ -6,102 +6,114 @@ use CodeIgniter\Model;
 
 class KuisModel extends Model
 {
-    protected $table      = 'kuis';
-    protected $primaryKey = 'id_kuis';
-    protected $allowedFields = [
-        'nama_kuis', 
-        'topik', 
-        'tanggal', 
-        'waktu_mulai', 
+    protected $table            = 'kuis';
+    protected $primaryKey       = 'id_kuis';
+    protected $allowedFields    = [
+        'nama_kuis',
+        'topik',
+        'tanggal',
+        'waktu_mulai',
         'waktu_selesai',
-        'nilai_minimum', 
-        'batas_pengulangan', 
+        'nilai_minimum',
+        'batas_pengulangan',
         'status'
     ];
+    protected $useTimestamps    = false;
 
     /**
-     * Auto update status kuis berdasarkan tanggal & waktu
-     */
-    private function updateStatusList(&$list)
-    {
-        $now = date('Y-m-d H:i:s');
-        foreach ($list as &$kuis) {
-            $mulai   = $kuis['tanggal'] . ' ' . $kuis['waktu_mulai'];
-            $selesai = $kuis['tanggal'] . ' ' . $kuis['waktu_selesai'];
+     * 🔄 Update status kuis berdasarkan waktu sekarang
+     */private function updateStatusList(array &$list): void
+{
+    $now = date('Y-m-d H:i:s');
 
-            if ($now < $mulai) {
-                $kuis['status'] = 'upcoming';
-            } elseif ($now >= $mulai && $now <= $selesai) {
-                $kuis['status'] = 'active';
-            } else {
-                $kuis['status'] = 'inactive';
-            }
+    foreach ($list as &$kuis) {
+        // ✅ kalau masih draft, jangan diutak-atik
+        if ($kuis['status_db'] === 'draft') {
+            $kuis['status'] = 'draft';
+            continue;
+        }
 
-            // sinkronkan ke DB kalau berubah
+        $mulai   = $kuis['tanggal'] . ' ' . $kuis['waktu_mulai'];
+        $selesai = $kuis['tanggal'] . ' ' . $kuis['waktu_selesai'];
+
+        if ($now < $mulai) {
+            $kuis['status'] = 'draft'; // sebelum mulai
+        } elseif ($now >= $mulai && $now <= $selesai) {
+            $kuis['status'] = 'active'; // sedang berlangsung
+        } else {
+            $kuis['status'] = 'inactive'; // sudah selesai
+        }
+
+        // ✅ update hanya jika berbeda dari DB
+        if (!isset($kuis['status_db']) || $kuis['status'] !== $kuis['status_db']) {
             $this->update($kuis['id_kuis'], ['status' => $kuis['status']]);
         }
     }
+}
+
 
     /**
-     * Ambil semua kuis beserta kategori agent terkait
+     * 📌 Ambil semua kuis beserta kategori agent
      */
-    public function getAllKuisWithKategori()
+    public function getAllKuisWithKategori(): array
     {
         $db = \Config\Database::connect();
-        $query = $db->query("
-            SELECT k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori
-            FROM kuis k
-            LEFT JOIN kuis_kategori kk ON k.id_kuis = kk.id_kuis
-            LEFT JOIN kategori_agent ka ON kk.id_kategori = ka.id_kategori
-            GROUP BY k.id_kuis
-            ORDER BY k.id_kuis DESC
-        ");
-        $result = $query->getResultArray();
+        $builder = $db->table($this->table . ' k');
+        $builder->select("k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori, k.status AS status_db");
+        $builder->join('kuis_kategori kk', 'k.id_kuis = kk.id_kuis', 'left');
+        $builder->join('kategori_agent ka', 'kk.id_kategori = ka.id_kategori', 'left');
+        $builder->groupBy('k.id_kuis');
+        $builder->orderBy('k.id_kuis', 'DESC');
 
+        $result = $builder->get()->getResultArray();
         $this->updateStatusList($result);
+
         return $result;
     }
 
     /**
-     * Ambil satu kuis beserta kategori agent terkait
+     * 📌 Ambil detail kuis by ID
      */
-    public function getKuisByIdWithKategori($id)
+    public function getKuisByIdWithKategori(int $id): ?array
     {
         $db = \Config\Database::connect();
-        $query = $db->query("
-            SELECT k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori
-            FROM kuis k
-            LEFT JOIN kuis_kategori kk ON k.id_kuis = kk.id_kuis
-            LEFT JOIN kategori_agent ka ON kk.id_kategori = ka.id_kategori
-            WHERE k.id_kuis = ?
-            GROUP BY k.id_kuis
-        ", [$id]);
+        $builder = $db->table($this->table . ' k');
+        $builder->select("k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori, k.status AS status_db");
+        $builder->join('kuis_kategori kk', 'k.id_kuis = kk.id_kuis', 'left');
+        $builder->join('kategori_agent ka', 'kk.id_kategori = ka.id_kategori', 'left');
+        $builder->where('k.id_kuis', $id);
+        $builder->groupBy('k.id_kuis');
 
-        $row = $query->getRowArray();
+        $row = $builder->get()->getRowArray();
+
         if ($row) {
             $list = [$row];
             $this->updateStatusList($list);
-            $row = $list[0];
+            return $list[0];
         }
 
-        return $row;
+        return null;
     }
-    public function getAvailableKuisForAgent()
+
+public function getAvailableKuisForAgent(): array
 {
     $db = \Config\Database::connect();
-    $query = $db->query("
-        SELECT k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori
-        FROM kuis k
-        LEFT JOIN kuis_kategori kk ON k.id_kuis = kk.id_kuis
-        LEFT JOIN kategori_agent ka ON kk.id_kategori = ka.id_kategori
-        WHERE k.status IN ('upcoming','active')
-        GROUP BY k.id_kuis
-        ORDER BY k.tanggal ASC, k.waktu_mulai ASC
-    ");
-    $result = $query->getResultArray();
+    $builder = $db->table($this->table . ' k');
+    $builder->select("k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori, k.status AS status_db");
+    $builder->join('kuis_kategori kk', 'k.id_kuis = kk.id_kuis', 'left');
+    $builder->join('kategori_agent ka', 'kk.id_kategori = ka.id_kategori', 'left');
+    $builder->where('k.status', 'active');  // ✅ hanya kuis active yg tampil
+    $builder->groupBy('k.id_kuis');
+    $builder->orderBy('k.tanggal ASC, k.waktu_mulai ASC');
 
-    $this->updateStatusList($result);
+    $result = $builder->get()->getResultArray();
+
     return $result;
+}
+
+    public function uploadKuis(int $id): bool
+{
+    return $this->update($id, ['status' => 'active']);
 }
 
 }

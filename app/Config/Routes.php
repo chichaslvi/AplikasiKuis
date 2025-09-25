@@ -44,6 +44,8 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1');
     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
     $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
+    $routes->get('kuis/upload/(:num)', 'KuisController::upload/$1');
+
 
     // ==================
     // Manajemen User
@@ -87,6 +89,7 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     // Soft Delete
     $routes->get('roles/deleteKategori/(:num)', 'RoleController::deleteKategori/$1');
     $routes->get('roles/deleteTeam/(:num)', 'RoleController::deleteTeam/$1');
+    $routes->get('admin/roles/delete-kategori/(:num)', 'Admin\Roles::destroyKategori/$1');
 
     // Aktivasi kembali
     $routes->get('roles/aktifkanKategori/(:num)', 'RoleController::aktifkanKategori/$1');
