@@ -74,4 +74,9 @@ class UserModel extends Model
                     ->where('users.id', $userId)
                     ->first();
     }
+    public function uploadKuis($id)
+{
+    return $this->update($id, ['status' => 'active']);
+}
+
 }

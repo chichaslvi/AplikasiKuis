@@ -126,4 +126,15 @@ class Agent extends BaseController
 
         return view('agent/soal', $data);
     }
+    
+     public function kerjakan($id_kuis)
+    {
+        $soalModel = new SoalKuisModel();
+        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+
+        return view('agent/kuis/kerjakan', [
+            'title' => 'Kerjakan Kuis',
+            'soalList' => $soalList,
+        ]);
+    }
 }

@@ -259,24 +259,103 @@ class KuisController extends BaseController
         exit;
     }
 
-    public function upload($id)
+   public function upload($id)
 {
     $kuisModel = new \App\Models\KuisModel();
 
-    // pastikan kuis ada & statusnya draft
+    // cek apakah kuis ada
     $kuis = $kuisModel->find($id);
     if (!$kuis) {
-        return redirect()->to('/admin/kuis')->with('error', 'Kuis tidak ditemukan.');
+        return redirect()->to('/admin/kuis')
+                         ->with('error', 'Kuis tidak ditemukan.');
     }
 
+    // cek status, hanya boleh upload kalau masih draft
     if ($kuis['status'] !== 'draft') {
-        return redirect()->to('/admin/kuis')->with('error', 'Kuis ini sudah diupload atau nonaktif.');
+        return redirect()->to('/admin/kuis')
+                         ->with('error', 'Kuis ini sudah diupload atau nonaktif.');
     }
 
     // update status jadi active
-    $kuisModel->uploadKuis($id);
+    $update = $kuisModel->uploadKuis($id);
+    if (!$update) {
+        return redirect()->to('/admin/kuis')
+                         ->with('error', 'Gagal mengubah status kuis.');
+    }
 
-    return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil diupload dan kini dapat dilihat oleh agent.');
+    // redirect ke halaman agent biar bisa langsung dicek
+    return redirect()->to('/admin/kuis')
+                     ->with('success', 'Kuis berhasil diupload dan kini dapat dilihat oleh agent.');
 }
 
+public function agentIndex()
+    {
+        $kuisModel = new KuisModel();
+
+        // ambil hanya kuis dengan status active
+        $data['kuis'] = $kuisModel->where('status', 'active')
+                                  ->orderBy('tanggal', 'DESC')
+                                  ->findAll();
+
+        return view('agent/dashboard', $data);
+    }
+
+    public function kerjakan($id_kuis)
+    {
+        $kuisModel = new KuisModel();
+        $soalModel = new SoalModel();
+
+        // cek apakah kuis valid & active
+        $kuis = $kuisModel->where('id_kuis', $id_kuis)
+                          ->where('status', 'active')
+                          ->first();
+
+        if (!$kuis) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Kuis tidak ditemukan atau tidak aktif.");
+        }
+
+        // ambil soal dari database
+        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+
+        return view('agent/soal', [
+            'kuis'     => $kuis,
+            'soalList' => $soalList
+        ]);
+    }
+   
+    public function kuisAktif()
+    {
+        $kuisModel = new KuisModel();
+
+        // ambil hanya kuis dengan status active
+        $data['kuis'] = $kuisModel->where('status', 'active')
+                                  ->orderBy('tanggal', 'DESC')
+                                  ->findAll();
+
+        return view('admin/kuis', $data);
+    }
+
+    public function soal($id_kuis)
+    {
+        $kuisModel = new KuisModel();
+        $soalModel = new SoalModel();
+
+        // cek apakah kuis valid & active
+        $kuis = $kuisModel->where('id_kuis', $id_kuis)
+                          ->where('status', 'active')
+                          ->first();
+
+        if (!$kuis) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound("Kuis tidak ditemukan atau tidak aktif.");
+        }
+
+        // ambil soal dari database
+        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+
+        dd($soalList);
+        return view('agent/soal', [
+            'kuis'     => $kuis,
+            'soalList' => $soalList
+        ]);
+    }
 }

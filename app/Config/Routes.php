@@ -12,6 +12,7 @@ use CodeIgniter\Router\RouteCollection;
 // ==================
 $routes->get('/', 'Auth::login');
 $routes->get('login', 'Auth::login');   // alias biar /login bisa dipakai
+$routes->get('auth/login', 'Auth::login'); // supaya redirect RoleFilter tidak 404
 $routes->post('auth/doLogin', 'Auth::doLogin');
 $routes->get('auth/changePassword', 'Auth::changePassword');
 $routes->post('auth/updatePassword', 'Auth::updatePassword');
@@ -37,13 +38,19 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     $routes->get('kuis', 'KuisController::index');
     $routes->get('kuis/create', 'KuisController::create');
     $routes->post('kuis/store_kuis', 'KuisController::store_kuis');
-    $routes->post('kuis/import_excel', 'SoalController::import_excel');
+
     $routes->get('kuis/edit/(:num)', 'KuisController::edit/$1');
     $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
-    $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
+
+    $routes->post('kuis/upload/(:num)', 'KuisController::upload/$1');
+    $routes->post('kuis/delete/(:num)', 'KuisController::delete/$1');
+
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1');
     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
     $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
+
+    $routes->post('kuis/import_excel', 'SoalController::import_excel');
+    $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
     $routes->get('kuis/upload/(:num)', 'KuisController::upload/$1');
 
 
@@ -114,9 +121,13 @@ $routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes
 // ==================
 $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('dashboard', 'Agent::dashboard');
-    $routes->get('soal', 'Agent::soal');
+    $routes->get('soal(:num)', 'Agent::soal/$1');
+    $routes->get('kuis', 'Agent::kuis'); 
     $routes->get('kuis/(:num)', 'Agent::detailKuis/$1');
     $routes->get('soal/(:num)', 'Agent::soal/$1');
+    $routes->get('kuis', 'KuisController::agentIndex');
+    $routes->get('kuis/soal/(:num)', 'KuisController::kerjakan/$1');
+
 
 });
 
@@ -126,4 +137,4 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
 $routes->get('dashboard', 'Agent::dashboard'); // alias /dashboard
 $routes->get('soal', 'Agent::soal');           // alias /soal
 $routes->get('ulangi-quiz', 'Agent::ulangiQuiz'); // alias /ulangi-quiz
-$routes->get('/riwayat', 'Agent::riwayat');
+$routes->get('riwayat', 'Agent::riwayat');
