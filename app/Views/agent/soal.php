@@ -331,41 +331,86 @@
     }
 
     function hitungDanTampilkanHasil() {
-      let benar = 0;
-      Object.keys(answers).forEach(no => {
-        if (questions[no] && answers[no] === questions[no].correct) benar++;
-      });
-      let salah = totalQuestions - benar;
-      let skor  = totalQuestions > 0 ? Math.round((benar/totalQuestions)*100) : 0;
+  // Cegah double submit
+  const finishBtnEl = document.getElementById("finishBtn");
+  if (finishBtnEl) finishBtnEl.disabled = true;
 
-      document.getElementById("correctCount").innerText = benar;
-      document.getElementById("wrongCount").innerText = salah;
-      document.getElementById("finalScore").innerText = skor;
+  // Hitung hasil
+  let benar = 0;
+  Object.keys(answers).forEach(no => {
+    if (questions[no] && answers[no] === questions[no].correct) benar++;
+  });
+  let total = typeof totalQuestions !== "undefined" ? totalQuestions : Object.keys(questions).length;
+  let salah = total - benar;
+  let skor  = total > 0 ? Math.round((benar/total)*100) : 0;
 
-      // >>> tampilkan tombol "Ulangi Quiz" hanya jika skor di bawah nilai_minimum
-      const retryBtn = document.getElementById("retryBtn");
-      if (retryBtn) {
-        retryBtn.style.display = (skor < passingScore) ? "inline-block" : "none";
-      }
+  // Tampilkan ringkas di UI
+  const correctEl = document.getElementById("correctCount");
+  const wrongEl   = document.getElementById("wrongCount");
+  const scoreEl   = document.getElementById("finalScore");
+  if (correctEl) correctEl.innerText = benar;
+  if (wrongEl)   wrongEl.innerText   = salah;
+  if (scoreEl)   scoreEl.innerText   = skor;
 
-      document.getElementById("quizSection").style.display = "none";
-      document.getElementById("resultSection").style.display = "block";
-    }
+  // Tampilkan tombol "Ulangi Quiz" hanya jika skor < nilai_minimum
+  const retryBtn = document.getElementById("retryBtn");
+  if (typeof passingScore !== "undefined" && retryBtn) {
+    retryBtn.style.display = (skor < passingScore) ? "inline-block" : "none";
+  }
 
-    if (finishBtn) {
-      finishBtn.addEventListener("click", () => {
-        if (confirmModal) { confirmModal.show(); }
-        else { hitungDanTampilkanHasil(); }
-      });
-    }
+  // Tampilkan section hasil
+  const quizSec   = document.getElementById("quizSection");
+  const resultSec = document.getElementById("resultSection");
+  if (quizSec)   quizSec.style.display   = "none";
+  if (resultSec) resultSec.style.display = "block";
 
-    const confirmYesBtn = document.getElementById("confirmYes");
-    if (confirmYesBtn) {
-      confirmYesBtn.addEventListener("click", () => {
-        hitungDanTampilkanHasil();
-        if (confirmModal) confirmModal.hide();
-      });
-    }
+  // ===== Kirim ke server untuk disimpan, lalu redirect ke riwayat =====
+  // Siapkan headers (auto ambil CSRF meta kalau ada)
+  const headers = {
+    "Content-Type": "application/json",
+    "X-Requested-With": "XMLHttpRequest"
+  };
+  const csrfHeaderMeta = document.querySelector('meta[name="X-CSRF-HEADER"]');
+  const csrfTokenMeta  = document.querySelector('meta[name="X-CSRF-TOKEN"]');
+  if (csrfHeaderMeta && csrfTokenMeta) {
+    headers[csrfHeaderMeta.content] = csrfTokenMeta.content;
+  }
+
+  // id_kuis dari PHP (sudah ada di view ini)
+  const idKuis = <?= (int)($kuis['id_kuis'] ?? 0) ?>;
+
+  // Kirim jawaban: { "1":"A", "2":"C", ... }
+  fetch('<?= base_url('agent/kuis/submit'); ?>', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ id_kuis: idKuis, answers })
+  })
+  .then(() => {
+    // Sukses: pindah ke riwayat
+    window.location.href = '<?= base_url('agent/riwayat'); ?>';
+  })
+  .catch(() => {
+    // Kalau gagal kirim, tetap redirect agar tidak nyangkut di layar hasil
+    window.location.href = '<?= base_url('agent/riwayat'); ?>';
+  });
+}
+
+// Handler tetap, hanya manggil fungsi di atas
+if (finishBtn) {
+  finishBtn.addEventListener("click", () => {
+    if (confirmModal) { confirmModal.show(); }
+    else { hitungDanTampilkanHasil(); }
+  });
+}
+
+const confirmYesBtn = document.getElementById("confirmYes");
+if (confirmYesBtn) {
+  confirmYesBtn.addEventListener("click", () => {
+    hitungDanTampilkanHasil();
+    if (confirmModal) confirmModal.hide();
+  });
+}
+
   </script>
 </body>
 </html>

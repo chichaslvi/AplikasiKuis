@@ -101,22 +101,40 @@ class KuisModel extends Model
     /**
      * 📌 Ambil kuis yang tersedia untuk agent (status Active)
      */
-    public function getAvailableKuisForAgent(): array
-    {
-        $db = \Config\Database::connect();
-        $builder = $db->table($this->table . ' k');
-        $builder->select("k.*, GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori, k.status AS status_db");
-        $builder->join('kuis_kategori kk', 'k.id_kuis = kk.id_kuis', 'left');
-        $builder->join('kategori_agent ka', 'kk.id_kategori = ka.id_kategori', 'left');
-        $builder->where('k.status', 'active'); // ✅ hanya yang Active
-        $builder->groupBy('k.id_kuis');
-        $builder->orderBy('k.tanggal ASC, k.waktu_mulai ASC');
+   public function getAvailableKuisForAgent(int $userId = 0): array
+{
+    $db = \Config\Database::connect();
 
-        $result = $builder->get()->getResultArray();
-        $this->updateStatusList($result);
+    $builder = $db->table($this->table . ' k');
+    $builder->select("
+        k.*,
+        GROUP_CONCAT(DISTINCT ka.nama_kategori ORDER BY ka.nama_kategori SEPARATOR ', ') AS kategori,
+        k.status AS status_db
+    ");
+    $builder->join('kuis_kategori kk', 'k.id_kuis = kk.id_kuis', 'left');
+    $builder->join('kategori_agent ka', 'kk.id_kategori = ka.id_kategori', 'left');
+    $builder->where('k.status', 'active');
 
-        return $result;
+    // ➕ filter kuis sudah dikerjakan user
+    if ($userId > 0) {
+        $builder->join(
+            'kuis_hasil h',
+            'h.id_kuis = k.id_kuis AND h.id_user = ' . $db->escape($userId),
+            'left'
+        );
+        $builder->where('h.id IS NULL');
     }
+
+    $builder->groupBy('k.id_kuis');
+    $builder->orderBy('k.tanggal ASC, k.waktu_mulai ASC');
+
+    $result = $builder->get()->getResultArray();
+    $this->updateStatusList($result);
+
+    return $result;
+}
+
+
 
     /**
      * 📌 Ubah status kuis jadi Active (Upload)

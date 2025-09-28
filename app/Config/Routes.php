@@ -128,7 +128,8 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('kuis', 'KuisController::agentIndex');
     $routes->get('kuis/soal/(:num)', 'KuisController::kerjakan/$1');
     $routes->get('riwayat', 'Agent::riwayat');
-
+    $routes->post('kuis/submit', 'Agent::submitKuis');
+    $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
 
 });
 
