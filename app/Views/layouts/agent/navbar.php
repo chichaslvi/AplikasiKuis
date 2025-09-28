@@ -1,3 +1,4 @@
+<!-- app/Views/layouts/agent/navbar.php -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
   <div class="container">
     <a class="navbar-brand fw-bold text-primary" href="<?= base_url('agent/dashboard') ?>">
@@ -13,10 +14,10 @@
           <a class="nav-link <?= url_is('agent/dashboard') ? 'active' : '' ?>" href="<?= base_url('agent/dashboard') ?>">Beranda</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= base_url('agent/riwayat') ?>">Riwayat</a>
+          <a class="nav-link <?= url_is('agent/riwayat') ? 'active' : '' ?>" href="<?= base_url('agent/riwayat') ?>">Riwayat</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="<?= base_url('agent/changePassword') ?>">Ganti Password</a>
+          <a class="nav-link <?= url_is('agent/changePassword') ? 'active' : '' ?>" href="<?= base_url('agent/changePassword') ?>">Ganti Password</a>
         </li>
         <li class="nav-item">
           <a class="nav-link text-danger" href="<?= base_url('logout') ?>">Logout</a>
