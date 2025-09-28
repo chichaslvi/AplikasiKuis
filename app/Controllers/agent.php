@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace App\Controllers;
 
 use App\Controllers\BaseController;
@@ -21,13 +21,13 @@ class Agent extends BaseController
     }
 
     /**
-     * Simple check: user harus login dan role = agent.
-     * Mengembalikan RedirectResponse jika gagal, atau null jika oke.
+     * Pastikan user sudah login & role = agent.
+     * Return RedirectResponse jika gagal, atau null jika valid.
      */
     private function ensureAgent()
     {
         $session = session();
-        $userId = $session->get('user_id');
+        $userId  = $session->get('user_id');
 
         if (!$userId) {
             return redirect()->to('/auth/login')->with('error', 'Silakan login terlebih dahulu.');
@@ -47,15 +47,13 @@ class Agent extends BaseController
     public function dashboard()
     {
         if ($resp = $this->ensureAgent()) {
-            return $resp; // redirect jika belum login / bukan agent
+            return $resp;
         }
 
         $userId = (int) session()->get('user_id');
-        // ✅ ambil user + kategori (nama_kategori) sesuai tabel kamu
-        $user = $this->userModel->getUserWithKategori($userId);
+        $user   = $this->userModel->getUserWithKategori($userId);
 
         if (!$user) {
-            // user hilang di DB — logout & arahkan login lagi
             session()->destroy();
             return redirect()->to('/auth/login')->with('error', 'User tidak ditemukan, silakan login ulang.');
         }
@@ -79,7 +77,7 @@ class Agent extends BaseController
 
         $id = (int) $id;
         if ($id <= 0) {
-            throw PageNotFoundException::forPageNotFound("ID Kuis tidak valid");
+            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
         }
 
         $kuis = $this->kuisModel->getKuisByIdWithKategori($id);
@@ -96,7 +94,7 @@ class Agent extends BaseController
     }
 
     /**
-     * Soal Kuis
+     * Daftar Soal Kuis
      */
     public function soal($id_kuis = null)
     {
@@ -108,12 +106,12 @@ class Agent extends BaseController
         $id_kuis = (int) $id_kuis;
 
         if ($id_kuis <= 0) {
-            throw PageNotFoundException::forPageNotFound("ID Kuis tidak valid");
+            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
         }
 
         $kuis = $this->kuisModel->getKuisByIdWithKategori($id_kuis);
         if (!$kuis) {
-            throw PageNotFoundException::forPageNotFound("Kuis tidak ditemukan");
+            throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan');
         }
 
         $soal = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
@@ -126,15 +124,159 @@ class Agent extends BaseController
 
         return view('agent/soal', $data);
     }
-    
-     public function kerjakan($id_kuis)
+
+    /**
+     * Kerjakan Kuis (halaman pengerjaan)
+     */
+    public function kerjakan($id_kuis = null)
     {
-        $soalModel = new SoalKuisModel();
-        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
+        }
+
+        $id_kuis = (int) $id_kuis;
+        if ($id_kuis <= 0) {
+            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
+        }
+
+        $kuis = $this->kuisModel->getKuisByIdWithKategori($id_kuis);
+        if (!$kuis) {
+            throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan');
+        }
+
+        $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
 
         return view('agent/kuis/kerjakan', [
-            'title' => 'Kerjakan Kuis',
+            'title'    => 'Kerjakan Kuis',
+            'kuis'     => $kuis,
             'soalList' => $soalList,
+            'user'     => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
         ]);
+    }
+
+    /**
+     * Riwayat Kuis (dummy)
+     */
+    public function riwayat()
+    {
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
+        }
+
+        $userId = (int) session()->get('user_id');
+
+        $riwayatKuis = [
+            [
+                'id_kuis'   => 1,
+                'nama_kuis' => 'Kuis A',
+                'sub_soal'  => 'Kuis Peningkatan Mutu',
+                'tanggal'   => 'Kamis, 25 Januari 2024',
+                'waktu'     => '11:00 - 12:00',
+            ],
+            [
+                'id_kuis'   => 2,
+                'nama_kuis' => 'Kuis B',
+                'sub_soal'  => 'Kuis Pengetahuan Produk',
+                'tanggal'   => 'Senin, 10 Februari 2024',
+                'waktu'     => '09:00 - 10:00',
+            ]
+        ];
+
+        $data = [
+            'user'        => $this->userModel->getUserWithKategori($userId),
+            'riwayatKuis' => $riwayatKuis
+        ];
+
+        return view('agent/riwayat', $data);
+    }
+
+    /**
+     * Hasil Kuis (dummy ringkas)
+     */
+    public function hasil($id_kuis = null)
+    {
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
+        }
+
+        $id_kuis = (int) $id_kuis;
+        if ($id_kuis <= 0) {
+            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
+        }
+
+        $kuis = [
+            'id_kuis'   => $id_kuis,
+            'nama_kuis' => "Kuis Dummy {$id_kuis}",
+            'topik'     => "Topik Dummy {$id_kuis}",
+        ];
+
+        $hasil = [
+            'sisa_waktu'     => '00:10:00',
+            'jumlah_soal'    => 10,
+            'jawaban_benar'  => 8,
+            'jawaban_salah'  => 2,
+            'total_skor'     => 80,
+        ];
+
+        $data = [
+            'title' => 'Hasil Kuis',
+            'kuis'  => $kuis,
+            'hasil' => $hasil
+        ];
+
+        return view('agent/hasil', $data);
+    }
+
+    /**
+     * Detail Hasil Kuis (dummy per-soal)
+     */
+    public function detailHasil($id_kuis = null)
+    {
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
+        }
+
+        $id_kuis = (int) $id_kuis;
+        if ($id_kuis <= 0) {
+            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
+        }
+
+        $kuis = [
+            'id_kuis'   => $id_kuis,
+            'nama_kuis' => 'Kuis A Agent Pertamina',
+            'topik'     => 'Pengetahuan Produk Pertamina'
+        ];
+
+        $jawaban = [
+            [
+                'soal'           => 'Pertamina memiliki layanan digital ...?',
+                'pilihan_a'      => 'MyPertamina',
+                'pilihan_b'      => 'PertaminaGo',
+                'pilihan_c'      => 'BBMOnline',
+                'pilihan_d'      => 'FuelApp',
+                'pilihan_e'      => 'PetrolNet',
+                'pilihan_user'   => 'PertaminaGo',
+                'jawaban_benar'  => 'MyPertamina',
+                'status'         => 'Salah'
+            ],
+            [
+                'soal'           => 'Apa warna khas yang digunakan Pertamina?',
+                'pilihan_a'      => 'Biru, Hijau, Merah',
+                'pilihan_b'      => 'Merah, Kuning, Hijau',
+                'pilihan_c'      => 'Biru, Putih, Merah',
+                'pilihan_d'      => 'Hijau, Biru, Merah',
+                'pilihan_e'      => 'Merah, Biru, Kuning',
+                'pilihan_user'   => 'Biru, Hijau, Merah',
+                'jawaban_benar'  => 'Biru, Hijau, Merah',
+                'status'         => 'Benar'
+            ],
+        ];
+
+        $data = [
+            'kuis'    => $kuis,
+            'jawaban' => $jawaban
+        ];
+
+        return view('agent/hasil_detail', $data);
     }
 }
