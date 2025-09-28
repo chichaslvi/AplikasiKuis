@@ -7,7 +7,6 @@ use CodeIgniter\Router\RouteCollection;
  */
 
 // ==================
-// ==================
 // Default (root URL) diarahkan ke login
 // ==================
 $routes->get('/', 'Auth::login');
@@ -42,16 +41,17 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     $routes->get('kuis/edit/(:num)', 'KuisController::edit/$1');
     $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
 
-    $routes->post('kuis/upload/(:num)', 'KuisController::upload/$1');
-    $routes->post('kuis/delete/(:num)', 'KuisController::delete/$1');
+    // Action
+    $routes->get('kuis/upload/(:num)', 'KuisController::upload/$1');   // ubah status jadi Active
+    $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');   // hapus kuis
 
+    // Detail & Archive
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1');
     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
     $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
 
+    // Import soal via Excel
     $routes->post('kuis/import_excel', 'SoalController::import_excel');
-    $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
-    $routes->get('kuis/upload/(:num)', 'KuisController::upload/$1');
 
 
     // ==================
@@ -121,16 +121,16 @@ $routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes
 // ==================
 $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('dashboard', 'Agent::dashboard');
-    $routes->get('soal(:num)', 'Agent::soal/$1');
-    $routes->get('kuis', 'Agent::kuis'); 
-    $routes->get('kuis/(:num)', 'Agent::detailKuis/$1');
     $routes->get('soal/(:num)', 'Agent::soal/$1');
-    $routes->get('kuis', 'KuisController::agentIndex');
-    $routes->get('kuis/soal/(:num)', 'KuisController::kerjakan/$1');
-    $routes->get('riwayat', 'Agent::riwayat');
-    $routes->post('kuis/submit', 'Agent::submitKuis');
-    $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
 
+    // Kuis
+    $routes->get('kuis', 'KuisController::agentIndex');               // daftar kuis active
+    $routes->get('kuis/soal/(:num)', 'KuisController::kerjakan/$1');  // kerjakan kuis
+    $routes->post('kuis/submit', 'Agent::submitKuis');                // submit jawaban
+
+    // Riwayat & Ulangi
+    $routes->get('riwayat', 'Agent::riwayat');
+    $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
 });
 
 // ==================
@@ -142,3 +142,6 @@ $routes->get('ulangi-quiz', 'Agent::ulangiQuiz'); // alias /ulangi-quiz
 $routes->get('riwayat', 'Agent::riwayat');
 $routes->get('agent/hasil/(:num)', 'Agent::hasil/$1');
 $routes->get('agent/hasil/detail/(:num)', 'Agent::detailHasil/$1');
+
+// 👉 Tambahkan alias yang kamu minta (dari blok bawah): agent/kuis/{id} → kerjakan kuis
+$routes->get('agent/kuis/(:num)', 'KuisController::kerjakan/$1');

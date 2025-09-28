@@ -291,123 +291,84 @@ class Agent extends BaseController
 {
     if ($resp = $this->ensureAgent()) return $resp;
 
-    try {
-        // Terima payload (boleh JSON atau form-url-encoded)
-        $payload = $this->request->getJSON(true);
-        if (!is_array($payload)) {
-            $payload = $this->request->getPost();
-        }
+    // Terima JSON { id_kuis, answers: { "1":"A", "2":"C", ... } }
+    $payload = $this->request->getJSON(true);
+    $idKuis  = (int)($payload['id_kuis'] ?? 0);
+    $answers = $payload['answers'] ?? [];
 
-        $idKuis  = (int)($payload['id_kuis'] ?? 0);
-        $answers = $payload['answers'] ?? [];
-
-        if ($idKuis <= 0 || !is_array($answers)) {
-            return $this->response->setStatusCode(400)->setJSON(['ok' => false, 'msg' => 'Data tidak valid']);
-        }
-
-        $userId = (int) session()->get('user_id');
-
-        // Ambil data kuis (nilai_minimum penting untuk penentuan lulus)
-        // Pakai method yang sudah ada; kalau tidak ada kolomnya, fallback ke select langsung.
-        $kuis = $this->kuisModel->getKuisByIdWithKategori($idKuis);
-        if (!$kuis || !array_key_exists('nilai_minimum', $kuis)) {
-            $kuis = $this->kuisModel->select('id_kuis, nilai_minimum')->find($idKuis);
-        }
-        if (!$kuis) {
-            return $this->response->setStatusCode(404)->setJSON(['ok' => false, 'msg' => 'Kuis tidak ditemukan']);
-        }
-        $nilaiMin = (int)($kuis['nilai_minimum'] ?? 0);
-
-        // Ambil list soal (ikut cara yang sama seperti view membangunnya)
-        // Jangan ubah urutan supaya index 1..N sama dengan yang ada di frontend
-        $soalList = $this->soalModel->where('id_kuis', $idKuis)->findAll();
-
-        $total = count($soalList);
-        $benar = 0;
-
-        // Jawaban dari frontend pakai index "1","2",... sesuai urutan $soalList
-        $i = 1;
-        foreach ($soalList as $row) {
-            $userKey = $answers[(string)$i] ?? $answers[$i] ?? null; // "A"/"B"/"C"/...
-            if (!$userKey) { $i++; continue; }
-            $userKey = strtoupper(trim((string)$userKey));
-
-            // opsi
-            $opt = [
-                'A' => $row['pilihan_a'] ?? null,
-                'B' => $row['pilihan_b'] ?? null,
-                'C' => $row['pilihan_c'] ?? null,
-                'D' => $row['pilihan_d'] ?? null,
-                'E' => $row['pilihan_e'] ?? null,
-            ];
-
-            // kunci dari DB bisa berupa huruf atau TEKS jawaban → normalkan ke huruf
-            $kunciRaw = trim((string)($row['jawaban'] ?? ''));
-            $kunciKey = null;
-
-            if (in_array($kunciRaw, ['A','B','C','D','E'], true)) {
-                $kunciKey = $kunciRaw;
-            } else {
-                foreach ($opt as $k => $val) {
-                    if ($val !== null && strcasecmp($kunciRaw, (string)$val) === 0) {
-                        $kunciKey = $k;
-                        break;
-                    }
-                }
-            }
-
-            if ($kunciKey && $userKey === $kunciKey) {
-                $benar++;
-            }
-            $i++;
-        }
-
-        $salah = $total - $benar;
-        $skor  = $total > 0 ? (int) round(($benar / $total) * 100) : 0;
-        $lulus = (int) ($skor >= $nilaiMin);
-
-        // Rekam attempt BARU setiap submit (tidak overwrite)
-        $this->hasilModel->insert([
-            'id_user'        => $userId,
-            'id_kuis'        => $idKuis,
-            'jumlah_soal'    => $total,
-            'jawaban_benar'  => $benar,
-            'jawaban_salah'  => $salah,
-            'total_skor'     => $skor,
-            'lulus'          => $lulus,
-            'finished_at'    => date('Y-m-d H:i:s'),
-        ]);
-
-        return $this->response->setJSON([
-            'ok'     => true,
-            'ringkas'=> [
-                'total' => $total,
-                'benar' => $benar,
-                'salah' => $salah,
-                'skor'  => $skor,
-                'lulus' => $lulus,
-            ],
-        ]);
-    } catch (\Throwable $e) {
-        // Jangan bocorkan detail error ke user di produksi
-        return $this->response->setStatusCode(500)->setJSON([
-            'ok'  => false,
-            'msg' => 'Terjadi kesalahan saat menyimpan hasil.',
-        ]);
+    if ($idKuis <= 0 || !is_array($answers)) {
+        return $this->response->setStatusCode(400)->setJSON(['ok'=>false,'msg'=>'Data tidak valid']);
     }
+
+    $userId = (int) session()->get('user_id');
+    $kuis   = $this->kuisModel->select('id_kuis, nilai_minimum, topik, nama_kuis')->find($idKuis);
+    if (!$kuis) {
+        return $this->response->setStatusCode(404)->setJSON(['ok'=>false,'msg'=>'Kuis tidak ditemukan']);
+    }
+
+    // Ambil urutan soal seperti di view (findAll default by PK ASC)
+    $soalList = $this->soalModel->where('id_kuis', $idKuis)->orderBy('id','ASC')->findAll();
+
+    $benar = 0; $total = count($soalList);
+
+    // Cocokkan jawaban user (huruf) dengan kunci (huruf/teks)
+    $i = 1;
+    foreach ($soalList as $row) {
+        $userKey = $answers[(string)$i] ?? $answers[$i] ?? null; // "A"/"B"/...
+        if (!$userKey) { $i++; continue; }
+
+        $opt = [
+            'A' => $row['pilihan_a'] ?? null,
+            'B' => $row['pilihan_b'] ?? null,
+            'C' => $row['pilihan_c'] ?? null,
+            'D' => $row['pilihan_d'] ?? null,
+            'E' => $row['pilihan_e'] ?? null,
+        ];
+
+        $kunciRaw = trim((string)($row['jawaban'] ?? ''));
+        $kunciKey = null;
+        if (in_array($kunciRaw, ['A','B','C','D','E'], true)) {
+            $kunciKey = $kunciRaw;
+        } else {
+            foreach ($opt as $k => $val) {
+                if ($val !== null && strcasecmp($kunciRaw, (string)$val) === 0) { $kunciKey = $k; break; }
+            }
+        }
+
+        if ($kunciKey && $userKey === $kunciKey) $benar++;
+        $i++;
+    }
+
+    $salah = $total - $benar;
+    $skor  = $total > 0 ? round(($benar / $total) * 100) : 0;
+    $lulus = (int) ($skor >= (int)($kuis['nilai_minimum'] ?? 0));
+
+    // Simpan / upsert (jika user submit 2x, overwrite)
+    $existing = $this->hasilModel->where(['id_user'=>$userId,'id_kuis'=>$idKuis])->first();
+    $data = [
+        'id_user'        => $userId,
+        'id_kuis'        => $idKuis,
+        'jumlah_soal'    => $total,
+        'jawaban_benar'  => $benar,
+        'jawaban_salah'  => $salah,
+        'total_skor'     => $skor,
+        'lulus'          => $lulus,
+        'finished_at'    => date('Y-m-d H:i:s'),
+    ];
+    if ($existing) {
+        $this->hasilModel->update($existing['id'], $data);
+    } else {
+        $this->hasilModel->insert($data);
+    }
+
+    return $this->response->setJSON([
+        'ok' => true,
+        'ringkas' => [
+            'total' => $total, 'benar' => $benar, 'salah' => $salah, 'skor' => $skor, 'lulus' => $lulus
+        ],
+    ]);
 }
 
-public function ulangiQuiz($id_kuis = null)
-{
-    if ($resp = $this->ensureAgent()) return $resp;
-
-    $id_kuis = (int) $id_kuis;
-    if ($id_kuis <= 0) {
-        throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
-    }
-    // Arahkan langsung ke halaman kerjakan kuis
-    return redirect()->to(base_url('agent/kuis/kerjakan/'.$id_kuis));
-}
 
 
 }

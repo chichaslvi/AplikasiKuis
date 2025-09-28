@@ -14,22 +14,9 @@ class KuisController extends BaseController
 {
     public function index()
     {
-        $db = \Config\Database::connect();
-
-        $query = $db->query("
-            SELECT k.*, 
-                   GROUP_CONCAT(ka.nama_kategori SEPARATOR ', ') AS kategori
-            FROM kuis k
-            LEFT JOIN kuis_kategori kk ON k.id_kuis = kk.id_kuis
-            LEFT JOIN kategori_agent ka ON kk.id_kategori = ka.id_kategori
-            GROUP BY k.id_kuis
-            ORDER BY k.id_kuis DESC
-        ");
-
-        $data['kuis'] = $query->getResultArray();
-
-        // Update status setiap kali index dibuka
-        $this->updateStatusKuis($data['kuis']);
+        // 🔁 Ganti ke model agar status sinkron & tidak dioverride
+        $kuisModel = new KuisModel();
+        $data['kuis'] = $kuisModel->getAllKuisWithKategori();
 
         return view('admin/kuis/index', $data);
     }
@@ -88,33 +75,33 @@ class KuisController extends BaseController
     }
 
     private function importSoal($idKuis, $filePath)
-{
-    $db = \Config\Database::connect();
-    $spreadsheet = IOFactory::load($filePath);
-    $sheet = $spreadsheet->getActiveSheet();
-    $rows = $sheet->toArray();
+    {
+        $db = \Config\Database::connect();
+        $spreadsheet = IOFactory::load($filePath);
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray();
 
-    $soalData = [];
-    for ($i = 1; $i < count($rows); $i++) { // mulai dari baris ke-2
-        $row = $rows[$i];
-        if (!empty($row[0])) {
-            $soalData[] = [
-                 'id_kuis'   => $idKuis,           // wajib isi
-    'soal'      => $row[0],
-    'pilihan_a' => $row[1] ?? '',
-    'pilihan_b' => $row[2] ?? '',
-    'pilihan_c' => $row[3] ?? '',
-    'pilihan_d' => $row[4] ?? '',
-    'pilihan_e' => $row[5] ?? '',
-    'jawaban'   => $row[6] ?? '',
-];
+        $soalData = [];
+        for ($i = 1; $i < count($rows); $i++) { // mulai dari baris ke-2
+            $row = $rows[$i];
+            if (!empty($row[0])) {
+                $soalData[] = [
+                    'id_kuis'   => $idKuis,           // wajib isi
+                    'soal'      => $row[0],
+                    'pilihan_a' => $row[1] ?? '',
+                    'pilihan_b' => $row[2] ?? '',
+                    'pilihan_c' => $row[3] ?? '',
+                    'pilihan_d' => $row[4] ?? '',
+                    'pilihan_e' => $row[5] ?? '',
+                    'jawaban'   => $row[6] ?? '',
+                ];
+            }
+        }
+
+        if (!empty($soalData)) {
+            $db->table('soal_kuis')->insertBatch($soalData);
         }
     }
-
-    if (!empty($soalData)) {
-        $db->table('soal_kuis')->insertBatch($soalData);
-    }
-}
 
 
     public function edit($id)
@@ -259,35 +246,35 @@ class KuisController extends BaseController
         exit;
     }
 
-  public function upload($id)
-{
-    $kuisModel = new \App\Models\KuisModel();
+    public function upload($id)
+    {
+        $kuisModel = new \App\Models\KuisModel();
 
-    // 1. Cari kuis berdasarkan ID
-    $kuis = $kuisModel->find($id);
-    if (!$kuis) {
+        // 1. Cari kuis berdasarkan ID
+        $kuis = $kuisModel->find($id);
+        if (!$kuis) {
+            return redirect()->to('/admin/kuis')
+                             ->with('error', 'Kuis tidak ditemukan.');
+        }
+
+        // 2. Pastikan status masih draft
+        if ($kuis['status'] !== 'draft') {
+            return redirect()->to('/admin/kuis')
+                             ->with('error', 'Kuis ini sudah diupload atau nonaktif.');
+        }
+
+        // 3. Jalankan update status melalui model
+        if (!$kuisModel->uploadKuis($id)) {
+            return redirect()->to('/admin/kuis')
+                             ->with('error', 'Gagal mengubah status kuis.');
+        }
+
+        // 4. Kalau berhasil
         return redirect()->to('/admin/kuis')
-                         ->with('error', 'Kuis tidak ditemukan.');
+                         ->with('success', 'Kuis berhasil diupload dan status berubah menjadi aktif.');
     }
 
-    // 2. Pastikan status masih draft
-    if ($kuis['status'] !== 'draft') {
-        return redirect()->to('/admin/kuis')
-                         ->with('error', 'Kuis ini sudah diupload atau nonaktif.');
-    }
-
-    // 3. Jalankan update status melalui model
-    if (!$kuisModel->uploadKuis($id)) {
-        return redirect()->to('/admin/kuis')
-                         ->with('error', 'Gagal mengubah status kuis.');
-    }
-
-    // 4. Kalau berhasil
-    return redirect()->to('/admin/kuis')
-                     ->with('success', 'Kuis berhasil diupload dan status berubah menjadi aktif.');
-}
-
-public function agentIndex()
+    public function agentIndex()
     {
         $kuisModel = new KuisModel();
 

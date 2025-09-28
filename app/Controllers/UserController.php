@@ -12,7 +12,7 @@ class UserController extends BaseController
     {
         // Pastikan hanya admin yang bisa akses controller ini
         if (session()->get('role') !== 'admin') {
-            redirect()->to('/login')->send();
+            redirect()->to('/auth/login')->send();
             exit;
         }
     }
@@ -56,31 +56,36 @@ class UserController extends BaseController
         $userModel = new UserModel();
 
         if (!$this->validate([
-            'nama'     => 'required',
-            'nik'      => 'required|is_unique[users.nik]',
-            'password' => 'required|min_length[6]',
-            'role'     => 'required'
+            'nama' => 'required',
+            'nik'  => 'required|trim|is_unique[users.nik]',
+            'role' => 'required|in_list[admin,reviewer,agent]',
+            // password opsional; jika kosong, default = NIK
         ])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        // hash password sebelum insert
-        $rawPassword    = $this->request->getPost('password');
-        $hashedPassword = password_hash($rawPassword, PASSWORD_DEFAULT);
+        $nama = trim($this->request->getPost('nama'));
+        $nik  = trim($this->request->getPost('nik'));
+        $role = trim($this->request->getPost('role'));
+
+        $plainPassword = $this->request->getPost('password');
+        if ($plainPassword === null || $plainPassword === '') {
+            // default password = NIK
+            $plainPassword = $nik;
+        }
 
         $data = [
-            'nama'                 => $this->request->getPost('nama'),
-            'nik'                  => $this->request->getPost('nik'),
-            'password'             => $hashedPassword,
-            'role'                 => $this->request->getPost('role'),
-            'must_change_password' => 1,
-            'is_active'            => 1,
-            'last_password_change' => date('Y-m-d H:i:s'),
+            'nama'     => $nama,
+            'nik'      => $nik,
+            'role'     => $role,
+            'password' => $plainPassword, // PLAIN → di-hash oleh UserModel::prepareInsert
+            'is_active'=> 1,
+            // must_change_password & last_password_change diatur model
         ];
 
         $userModel->insert($data);
 
-        return redirect()->to('/admin/users')->with('success', 'Akun berhasil ditambahkan!');
+        return redirect()->to('/admin/users')->with('success', 'Akun berhasil ditambahkan! User akan diminta ubah password saat login pertama.');
     }
 
     // ========================
@@ -103,32 +108,36 @@ class UserController extends BaseController
 
         if (!$this->validate([
             'nama'              => 'required',
-            'nik'               => 'required|is_unique[users.nik]',
-            'password'          => 'required|min_length[6]',
+            'nik'               => 'required|trim|is_unique[users.nik]',
             'kategori_agent_id' => 'required',
-            'team_leader_id'    => 'required'
+            'team_leader_id'    => 'required',
+            // password opsional; jika kosong, default = NIK
         ])) {
             return redirect()->back()->withInput()->with('errors', $this->validator->getErrors());
         }
 
-        $rawPassword    = $this->request->getPost('password');
-        $hashedPassword = password_hash($rawPassword, PASSWORD_DEFAULT);
+        $nama = trim($this->request->getPost('nama'));
+        $nik  = trim($this->request->getPost('nik'));
+
+        $plainPassword = $this->request->getPost('password');
+        if ($plainPassword === null || $plainPassword === '') {
+            $plainPassword = $nik; // default
+        }
 
         $data = [
-            'nama'                 => $this->request->getPost('nama'),
-            'nik'                  => $this->request->getPost('nik'),
-            'password'             => $hashedPassword,
-            'role'                 => 'agent',
-            'kategori_agent_id'    => $this->request->getPost('kategori_agent_id'),
-            'team_leader_id'       => $this->request->getPost('team_leader_id'),
-            'must_change_password' => 1,
-            'is_active'            => 1,
-            'last_password_change' => date('Y-m-d H:i:s'),
+            'nama'               => $nama,
+            'nik'                => $nik,
+            'password'           => $plainPassword, // PLAIN → di-hash oleh model
+            'role'               => 'agent',
+            'kategori_agent_id'  => $this->request->getPost('kategori_agent_id'),
+            'team_leader_id'     => $this->request->getPost('team_leader_id'),
+            'is_active'          => 1,
+            // must_change_password & last_password_change diatur model
         ];
 
         $userModel->insert($data);
 
-        return redirect()->to('/admin/users')->with('success', 'Akun Agent berhasil ditambahkan!');
+        return redirect()->to('/admin/users')->with('success', 'Akun Agent berhasil ditambahkan! User akan diminta ubah password saat login pertama.');
     }
 
     // ========================
@@ -156,16 +165,16 @@ class UserController extends BaseController
         }
 
         $data = [
-            'nama' => $this->request->getPost('nama'),
-            'nik'  => $this->request->getPost('nik'),
-            'role' => $this->request->getPost('role'),
+            'nama' => trim($this->request->getPost('nama')),
+            'nik'  => trim($this->request->getPost('nik')),
+            'role' => trim($this->request->getPost('role')),
         ];
 
-        if ($this->request->getPost('password')) {
-            $rawPassword           = $this->request->getPost('password');
-            $data['password']      = password_hash($rawPassword, PASSWORD_DEFAULT);
-            $data['last_password_change'] = date('Y-m-d H:i:s');
-            $data['must_change_password'] = 0;
+        // Jika admin mengisi password baru → kirim plain; model yang hash & set last_password_change
+        $plainPassword = $this->request->getPost('password');
+        if (!empty($plainPassword)) {
+            $data['password'] = $plainPassword; // PLAIN
+            // jangan set must_change_password di sini
         }
 
         if ($user['role'] === 'agent') {
@@ -243,17 +252,15 @@ class UserController extends BaseController
         }
 
         $data = [
-            'nama'              => $this->request->getPost('nama'),
-            'nik'               => $this->request->getPost('nik'),
+            'nama'              => trim($this->request->getPost('nama')),
+            'nik'               => trim($this->request->getPost('nik')),
             'kategori_agent_id' => $this->request->getPost('kategori_agent_id'),
             'team_leader_id'    => $this->request->getPost('team_leader_id') ?: null,
         ];
 
-        $password = $this->request->getPost('password');
-        if (!empty($password)) {
-            $data['password']             = password_hash($password, PASSWORD_DEFAULT);
-            $data['last_password_change'] = date('Y-m-d H:i:s');
-            $data['must_change_password'] = 0;
+        $plainPassword = $this->request->getPost('password');
+        if (!empty($plainPassword)) {
+            $data['password'] = $plainPassword; // PLAIN → model hash & set last_password_change
         }
 
         $userModel->update($id, $data);

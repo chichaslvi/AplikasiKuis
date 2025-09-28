@@ -191,14 +191,20 @@ html, body {
   <?php endif; ?>
 </td>
           <td class="action-buttons">
-    <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>" 
-       class="btn btn-sm"
+  <?php if ($row['status'] === 'draft'): ?>
+    <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>"
+       class="btn btn-blue btn-sm"
        onclick="return confirm('Yakin upload kuis ini?')">Upload</a>
-    <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-green btn-sm">EDIT</a>
-    <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-red btn-sm"
-       onclick="return confirm('Yakin hapus kuis ini?')">HAPUS</a>
-    <a href="<?= base_url('admin/kuis/archive/' . $row['id_kuis']) ?>" class="btn btn-dark btn-sm">ARCHIVE</a>
+  <?php else: ?>
+    <button class="btn btn-sm" disabled>Upload</button>
+  <?php endif; ?>
+
+  <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-green btn-sm">EDIT</a>
+  <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-red btn-sm"
+     onclick="return confirm('Yakin hapus kuis ini?')">HAPUS</a>
+  <a href="<?= base_url('admin/kuis/archive/' . $row['id_kuis']) ?>" class="btn btn-dark btn-sm">ARCHIVE</a>
 </td>
+
 
         </tr>
         <?php endforeach; ?>

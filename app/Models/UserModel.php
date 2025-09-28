@@ -28,19 +28,57 @@ class UserModel extends Model
     protected $createdField  = 'created_at';
     protected $updatedField  = 'updated_at';
 
-    // ✅ hook sebelum insert/update → hash password
-    protected $beforeInsert = ['hashPassword'];
-    protected $beforeUpdate = ['hashPassword'];
+    // ✅ hook sebelum insert/update
+    protected $beforeInsert = ['prepareInsert'];
+    protected $beforeUpdate = ['prepareUpdate'];
 
-    // 🔧 perbaikan: jangan pakai private, ganti jadi protected/public
-    protected function hashPassword(array $data): array
+    /** 🔧 Insert: hash password jika plain, paksa must_change_password = 1, biarkan last_password_change NULL */
+    protected function prepareInsert(array $data): array
     {
-        if (!empty($data['data']['password'])) {
+        // Hash password hanya jika masih plain (belum berbentuk bcrypt)
+        if (!empty($data['data']['password']) && !$this->looksHashed($data['data']['password'])) {
             $data['data']['password'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
-            $data['data']['last_password_change'] = date('Y-m-d H:i:s');
-            $data['data']['must_change_password'] = 0; // tandai sudah diganti
         }
+
+        // Akun baru wajib ganti password
+        $data['data']['must_change_password'] = 1;
+
+        // Biarkan last_password_change NULL saat akun baru
+        if (isset($data['data']['last_password_change'])) {
+            unset($data['data']['last_password_change']);
+        }
+
+        // Default aktif bila tidak diset
+        if (!isset($data['data']['is_active'])) {
+            $data['data']['is_active'] = 1;
+        }
+
         return $data;
+    }
+
+    /** 🔧 Update: hanya hash jika password diisi, catat last_password_change; jangan ubah must_change_password di sini */
+    protected function prepareUpdate(array $data): array
+    {
+        if (isset($data['data']['password']) && $data['data']['password'] !== '') {
+            // Hash hanya jika masih plain
+            if (!$this->looksHashed($data['data']['password'])) {
+                $data['data']['password'] = password_hash($data['data']['password'], PASSWORD_DEFAULT);
+            }
+            // Password benar-benar diganti → catat waktu perubahan
+            $data['data']['last_password_change'] = date('Y-m-d H:i:s');
+            // Jangan menyentuh must_change_password di update umum
+        } else {
+            // Jika password kosong, jangan ubah kolom password / last_password_change
+            unset($data['data']['password'], $data['data']['last_password_change']);
+        }
+
+        return $data;
+    }
+
+    /** 🔎 Deteksi sederhana hash bcrypt ($2y$ / $2a$ / $2b$) */
+    protected function looksHashed(string $value): bool
+    {
+        return (bool) preg_match('/^\$2[ayb]\$.{56,}$/', $value);
     }
 
     // ✅ Hitung jumlah user aktif dalam satu team
@@ -74,9 +112,9 @@ class UserModel extends Model
                     ->where('users.id', $userId)
                     ->first();
     }
-    public function uploadKuis($id)
-{
-    return $this->update($id, ['status' => 'active']);
-}
 
+    public function uploadKuis($id)
+    {
+        return $this->update($id, ['status' => 'active']);
+    }
 }
