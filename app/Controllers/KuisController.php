@@ -259,33 +259,32 @@ class KuisController extends BaseController
         exit;
     }
 
-   public function upload($id)
+  public function upload($id)
 {
     $kuisModel = new \App\Models\KuisModel();
 
-    // cek apakah kuis ada
+    // 1. Cari kuis berdasarkan ID
     $kuis = $kuisModel->find($id);
     if (!$kuis) {
         return redirect()->to('/admin/kuis')
                          ->with('error', 'Kuis tidak ditemukan.');
     }
 
-    // cek status, hanya boleh upload kalau masih draft
+    // 2. Pastikan status masih draft
     if ($kuis['status'] !== 'draft') {
         return redirect()->to('/admin/kuis')
                          ->with('error', 'Kuis ini sudah diupload atau nonaktif.');
     }
 
-    // update status jadi active
-    $update = $kuisModel->uploadKuis($id);
-    if (!$update) {
+    // 3. Jalankan update status melalui model
+    if (!$kuisModel->uploadKuis($id)) {
         return redirect()->to('/admin/kuis')
                          ->with('error', 'Gagal mengubah status kuis.');
     }
 
-    // redirect ke halaman agent biar bisa langsung dicek
+    // 4. Kalau berhasil
     return redirect()->to('/admin/kuis')
-                     ->with('success', 'Kuis berhasil diupload dan kini dapat dilihat oleh agent.');
+                     ->with('success', 'Kuis berhasil diupload dan status berubah menjadi aktif.');
 }
 
 public function agentIndex()

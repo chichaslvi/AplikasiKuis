@@ -192,7 +192,7 @@ html, body {
 </td>
           <td class="action-buttons">
     <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>" 
-       class="btn btn-success"
+       class="btn btn-sm"
        onclick="return confirm('Yakin upload kuis ini?')">Upload</a>
     <a href="<?= base_url('admin/kuis/edit/' . $row['id_kuis']) ?>" class="btn btn-green btn-sm">EDIT</a>
     <a href="<?= base_url('admin/kuis/delete/' . $row['id_kuis']) ?>" class="btn btn-red btn-sm"

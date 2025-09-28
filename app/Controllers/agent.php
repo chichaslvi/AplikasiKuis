@@ -114,12 +114,14 @@ class Agent extends BaseController
             throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan');
         }
 
-        $soal = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
+        // === FIX: pakai $soalList dan kirim ke view dengan key 'soalList' ===
+        $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
 
         $data = [
-            'user' => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
-            'kuis' => $kuis,
-            'soal' => $soal
+            'user'      => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
+            'kuis'      => $kuis,
+            'soalList'  => $soalList,   // dipakai oleh agent/soal.php
+            // 'soal'    => $soalList,   // (opsional) kalau ada bagian view lain yang masih pakai $soal
         ];
 
         return view('agent/soal', $data);
@@ -149,7 +151,7 @@ class Agent extends BaseController
         return view('agent/kuis/kerjakan', [
             'title'    => 'Kerjakan Kuis',
             'kuis'     => $kuis,
-            'soalList' => $soalList,
+            'soalList' => $soalList, // sudah benar
             'user'     => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
         ]);
     }
