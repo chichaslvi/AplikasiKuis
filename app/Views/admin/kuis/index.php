@@ -181,15 +181,42 @@ html, body {
           <td><?= esc($row['nilai_minimum']) ?></td>
           <td><?= esc($row['batas_pengulangan']) ?></td>
           <td><?= esc($row['kategori']) ?></td>
+
+          <!-- ======= HANYA BAGIAN STATUS YANG DIUBAH ======= -->
           <td>
-  <?php if ($row['status'] === 'active') : ?>
-    <span class="badge active">Active</span>
-  <?php elseif ($row['status'] === 'draft') : ?>
-    <span class="badge draft">Draft</span>
-  <?php else : ?>
-    <span class="badge inactive">Inactive</span>
-  <?php endif; ?>
-</td>
+            <?php
+                $statusDb = strtolower($row['status'] ?? 'draft');
+
+                // Bangun waktu mulai & selesai; handle lewat tengah malam
+                $tz   = new \DateTimeZone('Asia/Jakarta');
+                $now  = new \DateTime('now', $tz);
+
+                $startCalc = null;
+                $endCalc   = null;
+
+                if (!empty($row['tanggal']) && !empty($row['waktu_mulai'])) {
+                    $startCalc = new \DateTime($row['tanggal'].' '.$row['waktu_mulai'], $tz);
+                }
+                if (!empty($row['tanggal']) && !empty($row['waktu_selesai'])) {
+                    $endCalc = new \DateTime($row['tanggal'].' '.$row['waktu_selesai'], $tz);
+                    if ($startCalc && $endCalc <= $startCalc) {
+                        // kalau jam selesai <= jam mulai → anggap lewat tengah malam
+                        $endCalc->modify('+1 day');
+                    }
+                }
+
+                // Tampilkan sebagai inactive jika sudah lewat endCalc
+                $statusView = $statusDb;
+                if ($statusDb === 'active' && $endCalc && $now >= $endCalc) {
+                    $statusView = 'inactive';
+                }
+
+                $badgeClass = ($statusView === 'active') ? 'active' : (($statusView === 'draft') ? 'draft' : 'inactive');
+            ?>
+            <span class="badge <?= $badgeClass ?>"><?= ucfirst($statusView) ?></span>
+          </td>
+          <!-- =============================================== -->
+
           <td class="action-buttons">
   <?php if ($row['status'] === 'draft'): ?>
     <a href="<?= base_url('admin/kuis/upload/' . $row['id_kuis']) ?>"
