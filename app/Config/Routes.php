@@ -29,7 +29,9 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     $routes->get('dashboard', 'Dashboard::admin');
     $routes->get('users', 'UserController::index');   // daftar user
     $routes->get('roles', 'RoleController::index');   // halaman roles
-    $routes->get('reports', 'ReportController::index');
+    $routes->get('reports', 'ReportController::index');        // daftar semua kuis
+    $routes->get('report/detail/(:num)', 'ReportController::detail/$1'); // detail nilai peserta
+
 
     // ==================
     // Manajemen Kuis

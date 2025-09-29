@@ -108,12 +108,12 @@
                 <div class="report-item">
                     <div class="report-info-left">
                         <div class="report-title"><?= esc($item['nama_kuis']) ?></div>
-                        <div class="report-sub"><strong>Sub Soal:</strong> <?= esc($item['sub_soal']) ?></div>
+                        <div class="report-topik"><strong>Topik:</strong> <?= esc($item['topik']) ?></div>
                         <div class="report-datetime">
                             📅 <?= esc($item['tanggal']) ?> &nbsp; ⏰ <?= esc($item['waktu_mulai']) ?> - <?= esc($item['waktu_selesai']) ?>
                         </div>
                     </div>
-                    <a href="<?= base_url('admin/report/detail/' . $item['id']) ?>" class="btn-nilai">Lihat Nilai</a>
+                    <a href="<?= base_url('admin/report/detail/' . $item['id_kuis']) ?>" class="btn-nilai">Lihat Nilai</a>
                 </div>
             <?php endforeach; ?>
         <?php else : ?>
