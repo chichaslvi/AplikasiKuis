@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/admin/main') ?>
+<?= $this->extend('layouts/reviewer/main') ?>
 <?= $this->section('content') ?>
 
 <style>
@@ -61,44 +61,44 @@
 }
 
 /* Dropdown Checkbox */
-.dropdown-checkbox {
+.dropdown {
     position: relative;
     user-select: none;
 }
-.dropdown-header {
+.dropdown-toggle {
+    width: 100%;
+    padding: 10px 14px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    padding: 10px 14px;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #fff;
+}
+.dropdown-toggle:after {
+    content: "▼";
+    font-size: 12px;
+    margin-left: 8px;
 }
 .dropdown-list {
-    display: none;
     position: absolute;
     top: 100%;
     left: 0;
-    right: 0;
+    width: 100%;
+    max-height: 180px;
+    overflow-y: auto;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    background: var(--light-gray);
-    max-height: 200px;
-    overflow-y: auto;
+    background: #fff;
     margin-top: 4px;
+    display: none;
     z-index: 100;
-    padding: 10px;
+    padding: 8px;
 }
 .dropdown-list label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     cursor: pointer;
-    font-weight: 400;
-}
-.arrow {
-    font-size: 12px;
-    color: #555;
 }
 
 /* Import Excel Box */
@@ -113,6 +113,10 @@
     font-weight: 500;
     margin-bottom: 8px;
     display: block;
+}
+.import-box input[type="file"] {
+    width: 100%;
+    cursor: pointer;
 }
 
 /* Button */
@@ -169,74 +173,81 @@
 
 <div class="content">
   <div class="page-header">
-    <h2>Tambah Kuis</h2>
+    <h2>Edit Kuis</h2>
   </div>
 
   <div class="card">
-    <form id="formKuis" action="<?= base_url('admin/kuis/store_kuis') ?>" method="post" enctype="multipart/form-data">
+    <form id="formEditKuis" action="<?= base_url('reviewer/kuis/update/' . $kuis['id_kuis']) ?>" method="post" enctype="multipart/form-data">
       <?= csrf_field() ?>
 
       <div class="form-group">
         <label for="nama_kuis">Nama Kuis</label>
-        <input type="text" id="nama_kuis" name="nama_kuis" class="form-control" required>
+        <input type="text" id="nama_kuis" name="nama_kuis" class="form-control" 
+               value="<?= esc($kuis['nama_kuis']) ?>" required>
       </div>
 
       <div class="form-group">
         <label for="topik">Topik</label>
-        <input type="text" id="topik" name="topik" class="form-control" required>
+        <input type="text" id="topik" name="topik" class="form-control" 
+               value="<?= esc($kuis['topik']) ?>" required>
       </div>
 
       <div class="form-group">
         <label for="tanggal_pelaksanaan">Tanggal Pelaksanaan</label>
-        <input type="text" id="tanggal_pelaksanaan" name="tanggal_pelaksanaan" class="form-control" required readonly>
+        <input type="text" id="tanggal_pelaksanaan" name="tanggal" 
+               class="form-control" value="<?= esc($kuis['tanggal']) ?>" 
+               required readonly>
       </div>
 
       <div class="form-group">
         <label for="waktu_mulai">Waktu Mulai</label>
-        <input type="time" id="waktu_mulai" name="waktu_mulai" class="form-control" required>
+        <input type="time" id="waktu_mulai" name="waktu_mulai" class="form-control"
+               value="<?= esc($kuis['waktu_mulai']) ?>" required>
       </div>
 
       <div class="form-group">
         <label for="waktu_selesai">Waktu Selesai</label>
-        <input type="time" id="waktu_selesai" name="waktu_selesai" class="form-control" required>
+        <input type="time" id="waktu_selesai" name="waktu_selesai" class="form-control"
+               value="<?= esc($kuis['waktu_selesai']) ?>" required>
       </div>
 
       <div class="form-group">
         <label for="nilai_minimum">Nilai Minimum</label>
-        <input type="number" id="nilai_minimum" name="nilai_minimum" class="form-control" min="1" max="99" required>
+        <input type="number" id="nilai_minimum" name="nilai_minimum" class="form-control"
+               min="1" max="99" value="<?= esc($kuis['nilai_minimum']) ?>" required>
       </div>
 
       <div class="form-group">
         <label for="batas_pengulangan">Batas Pengulangan</label>
         <input type="number" id="batas_pengulangan" name="batas_pengulangan" 
-               class="form-control" min="1" max="9" required
+               class="form-control" min="1" max="9" 
+               value="<?= esc($kuis['batas_pengulangan']) ?>" required
                oninput="this.value=this.value.slice(0,1)">
       </div>
 
       <!-- Import Excel -->
       <div class="form-group import-excel">  
-        <div class="import-box">
-          <label>Import kuis dari Excel</label>  
-          <input type="file" id="file_excel" name="file_excel" accept=".xls,.xlsx" required>  
-          <small>Format file: .xls atau .xlsx</small>
-        </div>
+          <div class="import-box">
+              <label>Import kuis dari Excel</label>  
+              <input type="file" id="file_excel" name="file_excel" accept=".xls,.xlsx">  
+              <small>Format file: .xls atau .xlsx</small>
+          </div>
       </div>
 
-      <!-- Dropdown Checkbox Kategori Agent -->
+      <!-- Dropdown Kategori Agent -->
       <div class="form-group">
-        <label for="id_kategori">Kategori Agent</label>
-        <div class="dropdown-checkbox">
-            <div class="dropdown-header" onclick="toggleDropdown()">
-                <span id="selectedText">Pilih Kategori</span>
-                <span class="arrow">&#9662;</span>
-            </div>
-            <div class="dropdown-list" id="dropdownList">
+        <label>Kategori Agent</label>
+        <div class="dropdown" id="dropdownKategori">
+            <div class="dropdown-toggle">Pilih Kategori</div>
+            <div class="dropdown-list">
                 <label>
-                    <input type="checkbox" id="checkAll"> Pilih Semua
+                    <input type="checkbox" id="checkAll"> <strong>Pilih Semua</strong>
                 </label>
-                <?php foreach($kategori as $row): ?>
+                <?php $selectedKategori = array_column($kuisKategori, 'id_kategori'); ?>
+                <?php foreach ($kategori as $row): ?>
                     <label>
-                        <input type="checkbox" class="kategoriCheckbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>">
+                        <input type="checkbox" class="kategoriCheckbox" name="id_kategori[]" value="<?= $row['id_kategori'] ?>"
+                            <?= in_array($row['id_kategori'], $selectedKategori) ? 'checked' : '' ?>>
                         <?= esc($row['nama_kategori']) ?>
                     </label>
                 <?php endforeach; ?>
@@ -245,8 +256,8 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-green">SIMPAN</button>
-        <a href="<?= base_url('admin/kuis') ?>" class="btn btn-blue">BATAL</a>
+        <button type="submit" class="btn btn-green">SIMPAN PERUBAHAN</button>
+        <a href="<?= base_url('reviewer/kuis') ?>" class="btn btn-blue">BATAL</a>
       </div>
     </form>
   </div>
@@ -257,7 +268,6 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.css">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/plugins/confirmDate/confirmDate.min.js"></script>
-
 <script>
 flatpickr("#tanggal_pelaksanaan", {
   dateFormat: "Y-m-d",
@@ -266,54 +276,25 @@ flatpickr("#tanggal_pelaksanaan", {
   plugins: [new confirmDatePlugin({ confirmText: "Done" })]
 });
 
-// Dropdown toggle
-function toggleDropdown() {
-    const list = document.getElementById('dropdownList');
-    list.style.display = list.style.display === 'block' ? 'none' : 'block';
-}
+// Dropdown multi-select
+const dropdown = document.getElementById('dropdownKategori');
+const toggle = dropdown.querySelector('.dropdown-toggle');
+const list = dropdown.querySelector('.dropdown-list');
+toggle.addEventListener('click', () => list.style.display = list.style.display === 'block' ? 'none' : 'block');
 
-// Pilih semua checkbox
+// Pilih semua kategori
 const checkAll = document.getElementById('checkAll');
 const checkboxes = document.querySelectorAll('.kategoriCheckbox');
-
-checkAll.addEventListener('change', function() {
-    checkboxes.forEach(cb => cb.checked = this.checked);
-    updateSelectedText();
-});
-
-// Update header dropdown text sesuai pilihan
-function updateSelectedText() {
-    const selected = Array.from(checkboxes)
-                         .filter(cb => cb.checked)
-                         .map(cb => cb.nextSibling.textContent.trim());
-    document.getElementById('selectedText').textContent = selected.length ? selected.join(', ') : 'Pilih Kategori';
-}
-
-// Update text saat pilih per item
-checkboxes.forEach(cb => cb.addEventListener('change', () => {
-    updateCheckAll();
-    updateSelectedText();
-}));
-
 function updateCheckAll() {
     checkAll.checked = Array.from(checkboxes).every(cb => cb.checked);
 }
+checkboxes.forEach(cb => cb.addEventListener('change', updateCheckAll));
+checkAll.addEventListener('change', () => checkboxes.forEach(cb => cb.checked = checkAll.checked));
+updateCheckAll();
 
-// Validasi sebelum submit
-document.getElementById("formKuis").addEventListener("submit", function(e) {
-    const checked = document.querySelectorAll('input[name="id_kategori[]"]:checked');
-    const fileExcel = document.getElementById("file_excel").value;
-
-    if (checked.length === 0) {
-        e.preventDefault();
-        alert("Minimal pilih 1 kategori!");
-        return;
-    }
-    if (!fileExcel) {
-        e.preventDefault();
-        alert("File Excel wajib diunggah!");
-        return;
-    }
+// Tutup dropdown kalau klik di luar
+document.addEventListener('click', function(e) {
+    if (!dropdown.contains(e.target)) list.style.display = 'none';
 });
 </script>
 

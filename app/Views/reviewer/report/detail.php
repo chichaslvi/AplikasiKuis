@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/admin/main') ?>
+<?= $this->extend('layouts/reviewer/main') ?>
 <?= $this->section('content') ?>
 
 <style>
@@ -143,7 +143,7 @@
   </div>
 
   <div class="actions">
-    <form method="get" action="<?= base_url('admin/report/detail/'.$id_kuis) ?>">
+    <form method="get" action="<?= base_url('reviewer/report/detail/'.$id_kuis) ?>">
         <select name="team_leader_id" class="filter-role" onchange="this.form.submit()">
             <option value="">-- Filter Berdasarkan TL --</option>
             <?php foreach($teamLeaders as $tl): ?>
@@ -155,7 +155,7 @@
         </select>
     </form>
 
-    <a href="<?= base_url('admin/report/download/'.$id_kuis.'?team_leader_id='.$selectedTL) ?>" class="btn btn-blue">Download PDF</a>
+    <a href="<?= base_url('reviewer/report/download/'.$id_kuis.'?team_leader_id='.$selectedTL) ?>" class="btn btn-blue">Download PDF</a>
   </div>
 
   <div class="card">

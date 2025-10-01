@@ -1,4 +1,4 @@
-<?= $this->extend('layouts/admin/main') ?>
+<?= $this->extend('layouts/reviewer/main') ?>
 <?= $this->section('content') ?>
 
 <style>
@@ -130,7 +130,7 @@
                             📅 <?= esc($item['tanggal']) ?> &nbsp; ⏰ <?= esc($item['waktu_mulai']) ?> - <?= esc($item['waktu_selesai']) ?>
                         </div>
                     </div>
-                    <a href="<?= base_url('admin/report/detail/' . $item['id_kuis']) ?>" class="btn-nilai">Lihat Nilai</a>
+                    <a href="<?= base_url('reviewer/report/detail/' . $item['id_kuis']) ?>" class="btn-nilai">Lihat Nilai</a>
                 </div>
             <?php endforeach; ?>
         <?php else : ?>
