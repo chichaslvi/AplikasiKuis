@@ -176,7 +176,7 @@
     <table class="table-user">
       <thead>
         <tr>
-          <th>Id</th>
+          <th>No</th>
           <th>Nama</th>
           <th>NIK</th>
           <th>Password</th>

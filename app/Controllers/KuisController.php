@@ -19,25 +19,75 @@ class KuisController extends BaseController
     }
 
     /**
+     * Ambil id_kategori agent yang sedang login.
+     * Coba dari session('id_kategori'), kalau tidak ada fallback cari di tabel users pakai session('id_user').
+     */
+    private function getLoggedInKategoriId(): ?int
+    {
+        $idKategori = (int) (session()->get('id_kategori') ?? 0);
+        if ($idKategori > 0) {
+            return $idKategori;
+        }
+
+        $idUser = (int) (session()->get('id_user') ?? 0);
+        if ($idUser <= 0) {
+            return null;
+        }
+
+        $db  = \Config\Database::connect();
+        $row = $db->table('users')->select('id_kategori')->where('id_user', $idUser)->get()->getRow();
+        return $row ? (int) $row->id_kategori : null;
+    }
+
+    /**
      * ✅ Turunkan semua kuis active menjadi inactive jika end_at sudah lewat.
      */
     private function autoDeactivate()
-{
-    $db = \Config\Database::connect();
+    {
+        $db = \Config\Database::connect();
 
-    // Paksa timezone MySQL ke WIB (UTC+07:00)
-    $db->query("SET time_zone = '+07:00'");
+        // Gunakan waktu server PHP (yang sudah di-set ke Asia/Jakarta)
+        $now = date('Y-m-d H:i:s');
 
-    // Turunkan semua kuis active yang end_at sudah lewat (dibandingkan dengan NOW() di MySQL)
-    $db->query("
-        UPDATE kuis
-        SET status = 'inactive'
-        WHERE LOWER(status) = 'active'
-          AND end_at IS NOT NULL
-          AND end_at <= NOW()
-    ");
-}
+        // Gunakan Query Builder agar lebih stabil dan aman
+        $builder = $db->table('kuis');
+        $builder->set('status', 'inactive');
+        $builder->where('status', 'active');
+        $builder->where('end_at <=', $now);
+        $builder->update();
+    }
 
+    public function pollStatus()
+    {
+        // Pastikan kuis yang sudah lewat waktu langsung diturunkan di DB
+        $this->autoDeactivate();
+
+        // Ambil status & data terbaru
+        $kuisModel = new \App\Models\KuisModel();
+        $rows = $kuisModel->getAllKuisWithKategori(); // sudah memanggil updateStatusList()
+
+        // Kirim data lengkap agar UI bisa patch tanpa reload
+        $out = [];
+        foreach ($rows as $r) {
+            $out[] = [
+                'id_kuis'           => (int)($r['id_kuis'] ?? 0),
+                'status'            => strtolower((string)($r['status'] ?? 'draft')), // active/inactive/draft
+                'nama_kuis'         => (string)($r['nama_kuis'] ?? ''),
+                'topik'             => (string)($r['topik'] ?? ''),
+                'tanggal'           => (string)($r['tanggal'] ?? ''),
+                'waktu_mulai'       => (string)($r['waktu_mulai'] ?? ''),
+                'waktu_selesai'     => (string)($r['waktu_selesai'] ?? ''),
+                'nilai_minimum'     => (int)($r['nilai_minimum'] ?? 0),
+                'batas_pengulangan' => (int)($r['batas_pengulangan'] ?? 0),
+                'kategori'          => (string)($r['kategori'] ?? ($r['kategori_names'] ?? '')),
+            ];
+        }
+
+        return $this->response->setJSON([
+            'ok'   => true,
+            'data' => $out
+        ]);
+    }
 
     public function index()
     {
@@ -50,6 +100,7 @@ class KuisController extends BaseController
 
         return view('admin/kuis/index', $data);
     }
+    
 
     public function create()
     {
@@ -58,67 +109,67 @@ class KuisController extends BaseController
         return view('admin/kuis/create', $data);
     }
 
-   public function store_kuis()
-{
-    $kuisModel = new KuisModel();
-    $db = \Config\Database::connect();
+    public function store_kuis()
+    {
+        $kuisModel = new KuisModel();
+        $db = \Config\Database::connect();
 
-    $fileExcel = $this->request->getFile('file_excel');
+        $fileExcel = $this->request->getFile('file_excel');
 
-    // === Hitung start_at & end_at dari tanggal + waktu ===
-    $tanggal      = $this->request->getPost('tanggal_pelaksanaan');
-    $waktuMulai   = $this->request->getPost('waktu_mulai');
-    $waktuSelesai = $this->request->getPost('waktu_selesai');
+        // === Hitung start_at & end_at dari tanggal + waktu ===
+        $tanggal      = $this->request->getPost('tanggal_pelaksanaan');
+        $waktuMulai   = $this->request->getPost('waktu_mulai');
+        $waktuSelesai = $this->request->getPost('waktu_selesai');
 
-    $startAt = new \DateTime("$tanggal $waktuMulai");
-    $endAt   = new \DateTime("$tanggal $waktuSelesai");
-    if ($endAt <= $startAt) {
-        // kalau jam selesai <= jam mulai, anggap lewat tengah malam
-        $endAt->modify('+1 day');
-    }
-    // ================================================
-
-    $dataKuis = [
-        'nama_kuis'         => $this->request->getPost('nama_kuis'),
-        'topik'             => $this->request->getPost('topik'),
-        'tanggal'           => $tanggal,
-        'waktu_mulai'       => $waktuMulai,
-        'waktu_selesai'     => $waktuSelesai,
-        'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
-        'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-        'status'            => 'draft',
-        'file_excel'        => null,
-        // simpan window waktu:
-        'start_at'          => $startAt->format('Y-m-d H:i:s'),
-        'end_at'            => $endAt->format('Y-m-d H:i:s'),
-    ];
-
-    if ($fileExcel && $fileExcel->isValid() && !$fileExcel->hasMoved()) {
-        $newName = $fileExcel->getRandomName();
-        $fileExcel->move(WRITEPATH . 'uploads', $newName);
-        $dataKuis['file_excel'] = $newName;
-    }
-
-    $idKuis = $kuisModel->insert($dataKuis);
-
-    $kategoriDipilih = $this->request->getPost('id_kategori');
-    if ($kategoriDipilih && is_array($kategoriDipilih)) {
-        $pivot = [];
-        foreach ($kategoriDipilih as $idKat) {
-            $pivot[] = [
-                'id_kuis'     => $idKuis,
-                'id_kategori' => $idKat
-            ];
+        $startAt = new \DateTime("$tanggal $waktuMulai");
+        $endAt   = new \DateTime("$tanggal $waktuSelesai");
+        if ($endAt <= $startAt) {
+            // kalau jam selesai <= jam mulai, anggap lewat tengah malam
+            $endAt->modify('+1 day');
         }
-        $db->table('kuis_kategori')->insertBatch($pivot);
-    }
+        // ================================================
 
-    if (!empty($dataKuis['file_excel'])) {
-        $this->importSoal($idKuis, WRITEPATH . 'uploads/' . $dataKuis['file_excel']);
-    }
+        $dataKuis = [
+            'nama_kuis'         => $this->request->getPost('nama_kuis'),
+            'topik'             => $this->request->getPost('topik'),
+            'tanggal'           => $tanggal,
+            'waktu_mulai'       => $waktuMulai,
+            'waktu_selesai'     => $waktuSelesai,
+            'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
+            'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
+            'status'            => 'draft',
+            'file_excel'        => null,
+            // simpan window waktu:
+            'start_at'          => $startAt->format('Y-m-d H:i:s'),
+            'end_at'            => $endAt->format('Y-m-d H:i:s'),
+        ];
 
-    return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil ditambahkan.');
-}
+        if ($fileExcel && $fileExcel->isValid() && !$fileExcel->hasMoved()) {
+            $newName = $fileExcel->getRandomName();
+            $fileExcel->move(WRITEPATH . 'uploads', $newName);
+            $dataKuis['file_excel'] = $newName;
+        }
+
+        $idKuis = $kuisModel->insert($dataKuis);
+
+        $kategoriDipilih = $this->request->getPost('id_kategori');
+        if ($kategoriDipilih && is_array($kategoriDipilih)) {
+            $pivot = [];
+            foreach ($kategoriDipilih as $idKat) {
+                $pivot[] = [
+                    'id_kuis'     => $idKuis,
+                    'id_kategori' => $idKat
+                ];
+            }
+            $db->table('kuis_kategori')->insertBatch($pivot);
+        }
+
+        if (!empty($dataKuis['file_excel'])) {
+            $this->importSoal($idKuis, WRITEPATH . 'uploads/' . $dataKuis['file_excel']);
+        }
+
+        return redirect()->to('/admin/kuis')->with('success', 'Kuis berhasil ditambahkan.');
+    }
 
     private function importSoal($idKuis, $filePath)
     {
@@ -149,7 +200,6 @@ class KuisController extends BaseController
         }
     }
 
-
     public function edit($id)
     {
         $kuisModel = new KuisModel();
@@ -171,62 +221,62 @@ class KuisController extends BaseController
     }
 
     public function update($id)
-{
-    $kuisModel = new KuisModel();
-    $db = \Config\Database::connect();
+    {
+        $kuisModel = new KuisModel();
+        $db = \Config\Database::connect();
 
-    // === Hitung ulang start_at & end_at ===
-    $tanggal      = $this->request->getPost('tanggal');
-    $waktuMulai   = $this->request->getPost('waktu_mulai');
-    $waktuSelesai = $this->request->getPost('waktu_selesai');
+        // === Hitung ulang start_at & end_at ===
+        $tanggal      = $this->request->getPost('tanggal');
+        $waktuMulai   = $this->request->getPost('waktu_mulai');
+        $waktuSelesai = $this->request->getPost('waktu_selesai');
 
-    $startAt = new \DateTime("$tanggal $waktuMulai");
-    $endAt   = new \DateTime("$tanggal $waktuSelesai");
-    if ($endAt <= $startAt) {
-        $endAt->modify('+1 day');
-    }
-    // =====================================
-
-    $data = [
-        'nama_kuis'         => $this->request->getPost('nama_kuis'),
-        'topik'             => $this->request->getPost('topik'),
-        'tanggal'           => $tanggal,
-        'waktu_mulai'       => $waktuMulai,
-        'waktu_selesai'     => $waktuSelesai,
-        'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
-        'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-        // simpan window waktu:
-        'start_at'          => $startAt->format('Y-m-d H:i:s'),
-        'end_at'            => $endAt->format('Y-m-d H:i:s'),
-    ];
-
-    $fileExcel = $this->request->getFile('file_excel');
-    if ($fileExcel && $fileExcel->isValid()) {
-        $newName = $fileExcel->getRandomName();
-        $fileExcel->move(WRITEPATH . 'uploads', $newName);
-        $data['file_excel'] = $newName;
-
-        $db->table('soal_kuis')->where('id_kuis', $id)->delete();
-        $this->importSoal($id, WRITEPATH . 'uploads/' . $newName);
-    }
-
-    $kuisModel->update($id, $data);
-
-    $db->table('kuis_kategori')->where('id_kuis', $id)->delete();
-    $kategoriDipilih = $this->request->getPost('id_kategori');
-    if ($kategoriDipilih) {
-        $pivot = [];
-        foreach ($kategoriDipilih as $idKat) {
-            $pivot[] = [
-                'id_kuis'     => $id,
-                'id_kategori' => $idKat
-            ];
+        $startAt = new \DateTime("$tanggal $waktuMulai");
+        $endAt   = new \DateTime("$tanggal $waktuSelesai");
+        if ($endAt <= $startAt) {
+            $endAt->modify('+1 day');
         }
-        $db->table('kuis_kategori')->insertBatch($pivot);
-    }
+        // =====================================
 
-    return redirect()->to('/admin/kuis')->with('success', 'Data kuis berhasil diperbarui.');
-}
+        $data = [
+            'nama_kuis'         => $this->request->getPost('nama_kuis'),
+            'topik'             => $this->request->getPost('topik'),
+            'tanggal'           => $tanggal,
+            'waktu_mulai'       => $waktuMulai,
+            'waktu_selesai'     => $waktuSelesai,
+            'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
+            'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
+            // simpan window waktu:
+            'start_at'          => $startAt->format('Y-m-d H:i:s'),
+            'end_at'            => $endAt->format('Y-m-d H:i:s'),
+        ];
+
+        $fileExcel = $this->request->getFile('file_excel');
+        if ($fileExcel && $fileExcel->isValid()) {
+            $newName = $fileExcel->getRandomName();
+            $fileExcel->move(WRITEPATH . 'uploads', $newName);
+            $data['file_excel'] = $newName;
+
+            $db->table('soal_kuis')->where('id_kuis', $id)->delete();
+            $this->importSoal($id, WRITEPATH . 'uploads/' . $newName);
+        }
+
+        $kuisModel->update($id, $data);
+
+        $db->table('kuis_kategori')->where('id_kuis', $id)->delete();
+        $kategoriDipilih = $this->request->getPost('id_kategori');
+        if ($kategoriDipilih) {
+            $pivot = [];
+            foreach ($kategoriDipilih as $idKat) {
+                $pivot[] = [
+                    'id_kuis'     => $id,
+                    'id_kategori' => $idKat
+                ];
+            }
+            $db->table('kuis_kategori')->insertBatch($pivot);
+        }
+
+        return redirect()->to('/admin/kuis')->with('success', 'Data kuis berhasil diperbarui.');
+    }
 
     private function updateStatusKuis($kuisList)
     {
@@ -340,46 +390,63 @@ class KuisController extends BaseController
         // ✅ pastikan kuis kadaluarsa diturunkan
         $this->autoDeactivate();
 
-        $kuisModel = new KuisModel();
-        $now = date('Y-m-d H:i:s');
+        // kategori agent yang login
+        $idKategori = $this->getLoggedInKategoriId();
 
-        // ✅ tampilkan hanya kuis active yang sedang dalam window waktu
-        $data['kuis'] = $kuisModel->where('status', 'active')
-                                  ->where('start_at <=', $now)
-                                  ->where('end_at >',  $now)
-                                  ->orderBy('start_at', 'ASC')
-                                  ->findAll();
+        $kuisModel = new KuisModel();
+
+        // kalau tidak ada kategori → jangan tampilkan apa pun
+        if (!$idKategori) {
+            $data['kuis'] = [];
+            return view('agent/dashboard', $data);
+        }
+
+        // ✅ tampilkan hanya kuis untuk kategori ini, berstatus active, dan dalam window waktu
+        $data['kuis'] = $kuisModel->getKuisByKategoriForNow($idKategori);
 
         return view('agent/dashboard', $data);
     }
 
     public function kerjakan($id_kuis)
-{
-    $kuisModel = new KuisModel();
-    $soalModel = new SoalModel();
-    $now = date('Y-m-d H:i:s');
+    {
+        $kuisModel = new KuisModel();
+        $soalModel = new SoalModel();
+        $now = date('Y-m-d H:i:s');
 
-    // Hanya boleh mengerjakan jika kuis masih ACTIVE dan masih dalam window waktu
-    $kuis = $kuisModel->where('id_kuis', $id_kuis)
-                      ->where('status', 'active')
-                      ->where('start_at <=', $now)
-                      ->where('end_at >',  $now)
-                      ->first();
+        // pastikan kategori cocok dengan agent yang login
+        $idKategori = $this->getLoggedInKategoriId();
+        if (!$idKategori) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
+                "Kuis tidak ditemukan atau tidak tersedia untuk kategori Anda."
+            );
+        }
 
-    if (!$kuis) {
-        throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
-            "Kuis tidak ditemukan atau sudah tidak tersedia."
-        );
+        // Hanya boleh mengerjakan jika kuis ACTIVE, masih dalam window, dan milik kategori agent
+        $db = \Config\Database::connect();
+        $kuis = $db->table('kuis k')
+                   ->select('k.*')
+                   ->join('kuis_kategori kk', 'kk.id_kuis = k.id_kuis', 'left')
+                   ->where('k.id_kuis', $id_kuis)
+                   ->where('kk.id_kategori', $idKategori)
+                   ->where('k.status', 'active')
+                   ->where('k.start_at <=', $now)
+                   ->where('k.end_at >',  $now)
+                   ->get()->getRowArray();
+
+        if (!$kuis) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
+                "Kuis tidak ditemukan atau sudah tidak tersedia."
+            );
+        }
+
+        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+
+        return view('agent/soal', [
+            'kuis'     => $kuis,
+            'soalList' => $soalList
+        ]);
     }
 
-    $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
-
-    return view('agent/soal', [
-        'kuis'     => $kuis,
-        'soalList' => $soalList
-    ]);
-}
-   
     public function kuisAktif()
     {
         $kuisModel = new KuisModel();
@@ -393,29 +460,42 @@ class KuisController extends BaseController
     }
 
     public function soal($id_kuis)
-{
-    $kuisModel = new KuisModel();
-    $soalModel = new SoalModel();
-    $now = date('Y-m-d H:i:s');
+    {
+        $kuisModel = new KuisModel();
+        $soalModel = new SoalModel();
+        $now = date('Y-m-d H:i:s');
 
-    // Pastikan hanya kuis ACTIVE & dalam window waktu yang bisa diakses
-    $kuis = $kuisModel->where('id_kuis', $id_kuis)
-                      ->where('status', 'active')
-                      ->where('start_at <=', $now)
-                      ->where('end_at >',  $now)
-                      ->first();
+        // pastikan kategori cocok dengan agent yang login
+        $idKategori = $this->getLoggedInKategoriId();
+        if (!$idKategori) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
+                "Kuis tidak ditemukan atau tidak tersedia untuk kategori Anda."
+            );
+        }
 
-    if (!$kuis) {
-        throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
-            "Kuis tidak ditemukan atau sudah tidak tersedia."
-        );
+        // Pastikan hanya kuis ACTIVE, dalam window, dan sesuai kategori
+        $db = \Config\Database::connect();
+        $kuis = $db->table('kuis k')
+                   ->select('k.*')
+                   ->join('kuis_kategori kk', 'kk.id_kuis = k.id_kuis', 'left')
+                   ->where('k.id_kuis', $id_kuis)
+                   ->where('kk.id_kategori', $idKategori)
+                   ->where('k.status', 'active')
+                   ->where('k.start_at <=', $now)
+                   ->where('k.end_at >',  $now)
+                   ->get()->getRowArray();
+
+        if (!$kuis) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
+                "Kuis tidak ditemukan atau sudah tidak tersedia."
+            );
+        }
+
+        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+
+        return view('agent/soal', [
+            'kuis'     => $kuis,
+            'soalList' => $soalList
+        ]);
     }
-
-    $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
-
-    return view('agent/soal', [
-        'kuis'     => $kuis,
-        'soalList' => $soalList
-    ]);
-}
 }

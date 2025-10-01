@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Models\UserModel;
 use DateTime;
 
-
 class Auth extends BaseController
 {
     protected $userModel;
@@ -64,17 +63,18 @@ class Auth extends BaseController
         }
 
         // 3. Jika valid -> login normal
-session()->regenerate();
+        session()->regenerate();
 
-session()->set([
-    'user_id'    => $user['id'],
-    'username'   => $user['username'] ?? null,
-    'nama'       => $user['nama'],
-    'nik'        => $user['nik'],
-    'role'       => $user['role'],
-    'isLoggedIn' => true
+        session()->set([
+    'user_id'           => $user['id'],
+    'username'          => $user['username'] ?? null,
+    'nama'              => $user['nama'],
+    'nik'               => $user['nik'],
+    'role'              => $user['role'],
+    'isLoggedIn'        => true,
+    // PENTING: ambil dari kolom yang benar di tabel users
+    'kategori_agent_id' => (int) ($user['kategori_agent_id'] ?? $user['id_kategori'] ?? 0),
 ]);
-
 
         // Redirect sesuai role
         switch (strtolower($user['role'])) {

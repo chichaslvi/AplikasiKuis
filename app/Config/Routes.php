@@ -23,6 +23,7 @@ $routes->get('auth/logout', 'Auth::logout');
 // ==================
 $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
 
+
     // ==================
     // Dashboard & General
     // ==================
@@ -31,7 +32,7 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     $routes->get('roles', 'RoleController::index');   // halaman roles
     $routes->get('reports', 'ReportController::index');        // daftar semua kuis
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1'); // detail nilai peserta
-
+$routes->get('report/download/(:num)', 'ReportController::download/$1');
 
     // ==================
     // Manajemen Kuis
@@ -55,6 +56,9 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     // Import soal via Excel
     $routes->post('kuis/import_excel', 'SoalController::import_excel');
 
+    // ⬅️ polling status kuis (real-time update badge di dashboard admin)
+    $routes->get('kuis/pollStatus', 'KuisController::pollStatus');
+
 
     // ==================
     // Manajemen User
@@ -62,7 +66,8 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
 
     // Admin & Reviewer
     $routes->get('users/create_admin', 'UserController::create_admin'); 
-    $routes->post('users/store_admin', 'UserController::store_admin');  
+    $routes->post('users/store_admin', 'UserController::store_admin');
+      
 
     // Agent
     $routes->get('users/create_agent', 'UserController::create_agent'); 
@@ -116,6 +121,8 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
 // ==================
 $routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes) {
     $routes->get('dashboard', 'Dashboard::reviewer');
+    $routes->get('dashboard', 'reviewer::dashboard');
+    $routes->get('kuis', 'reviewer::kuis');
 });
 
 // ==================
@@ -141,9 +148,13 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
 $routes->get('dashboard', 'Agent::dashboard'); // alias /dashboard
 $routes->get('soal', 'Agent::soal');           // alias /soal
 $routes->get('ulangi-quiz', 'Agent::ulangiQuiz'); // alias /ulangi-quiz
+$routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); // <-- DITAMBAHKAN: /ulangi-quiz/{id}
 $routes->get('riwayat', 'Agent::riwayat');
 $routes->get('agent/hasil/(:num)', 'Agent::hasil/$1');
 $routes->get('agent/hasil/detail/(:num)', 'Agent::detailHasil/$1');
 
 // 👉 Tambahkan alias yang kamu minta (dari blok bawah): agent/kuis/{id} → kerjakan kuis
 $routes->get('agent/kuis/(:num)', 'KuisController::kerjakan/$1');
+$routes->get('agent/statusKuis', 'Agent::statusKuis');
+// ✅ Long-poll untuk realtime update dashboard agent saat admin mengedit kuis aktif
+$routes->get('agent/statusKuisLP', 'Agent::statusKuisLP');
