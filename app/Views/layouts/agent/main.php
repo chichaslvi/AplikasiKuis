@@ -33,7 +33,36 @@
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Section tambahan untuk page-specific JS (dipakai di soal.php) -->
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Popup Notifikasi -->
+  <?php if(session()->getFlashdata('success')): ?>
+  <script>
+  Swal.fire({
+    icon: 'success',
+    title: 'Berhasil!',
+    text: '<?= session()->getFlashdata('success') ?>',
+    showConfirmButton: true,
+    confirmButtonText: 'OK',
+    confirmButtonColor: '#3085d6',
+  });
+  </script>
+  <?php endif; ?>
+
+  <?php if(session()->getFlashdata('error')): ?>
+  <script>
+  Swal.fire({
+    icon: 'error',
+    title: 'Oops...',
+    text: '<?= session()->getFlashdata('error') ?>',
+    confirmButtonText: 'Coba Lagi',
+    confirmButtonColor: '#d33',
+  });
+  </script>
+  <?php endif; ?>
+
+  <!-- Section tambahan untuk page-specific JS -->
   <?= $this->renderSection('scripts') ?>
 </body>
 </html>
