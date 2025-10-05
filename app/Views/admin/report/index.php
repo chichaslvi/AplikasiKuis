@@ -109,6 +109,34 @@
         margin-top: 8px;
     }
 }
+
+/* Search box dengan input + button */
+.search-box {
+    margin-bottom: 18px;
+    display: flex;
+    gap: 8px;
+}
+.search-box input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 14px;
+}
+.search-box button {
+    padding: 10px 16px;
+    background: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background .2s ease, transform .1s ease;
+}
+.search-box button:hover {
+    background: var(--secondary-color);
+    transform: translateY(-2px);
+}
 </style>
 
 <div class="content">
@@ -117,6 +145,7 @@
     <!-- Search box -->
     <div class="search-box">
         <input type="text" id="searchInput" placeholder="Cari kuis...">
+        <button id="searchBtn">Cari</button>
     </div>
 
     <div class="report-container" id="reportList">
@@ -140,21 +169,34 @@
 </div>
 
 <script>
-    document.getElementById('searchInput').addEventListener('keyup', function() {
-        let filter = this.value.toLowerCase();
+    function filterKuis() {
+        let filter = document.getElementById('searchInput').value.toLowerCase();
         let items = document.querySelectorAll('.report-item');
         
         items.forEach(function(item) {
-            let title = item.querySelector('.report-title').innerText.toLowerCase();
-            let topic = item.querySelector('.report-topik').innerText.toLowerCase();
+            // Ambil seluruh teks dari elemen item (termasuk angka)
+            let textContent = item.innerText.toLowerCase();
 
-            if (title.includes(filter) || topic.includes(filter)) {
+            if (textContent.includes(filter)) {
                 item.style.display = "";
             } else {
                 item.style.display = "none";
             }
         });
-    });
+    }
+
+    // Event listener untuk ketik langsung
+    document.getElementById('searchInput').addEventListener('keyup', filterKuis);
+
+    // Event listener untuk klik tombol
+    document.getElementById('searchBtn').addEventListener('click', filterKuis);
+
+    // 🔄 Auto-refresh halaman setiap 60 detik
+    setInterval(function() {
+        window.location.reload();
+    }, 60000);
+
 </script>
+
 
 <?= $this->endSection() ?>

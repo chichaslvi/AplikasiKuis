@@ -4,6 +4,7 @@
     <a class="navbar-brand fw-bold text-primary" href="<?= base_url('agent/dashboard') ?>">
       AgentKuis
     </a>
+
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -11,16 +12,23 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link <?= url_is('agent/dashboard') ? 'active' : '' ?>" href="<?= base_url('agent/dashboard') ?>">Beranda</a>
+          <a class="nav-link <?= url_is('agent/dashboard') ? 'active' : '' ?>" 
+             href="<?= base_url('agent/dashboard') ?>">Beranda</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link <?= url_is('agent/riwayat') ? 'active' : '' ?>" href="<?= base_url('agent/riwayat') ?>">Riwayat</a>
+          <a class="nav-link <?= url_is('agent/riwayat') ? 'active' : '' ?>" 
+             href="<?= base_url('agent/riwayat') ?>">Riwayat</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link <?= url_is('agent/changePassword') ? 'active' : '' ?>" href="<?= base_url('agent/changePassword') ?>">Ganti Password</a>
+          <a class="nav-link <?= url_is('agent/ganti-password') ? 'active' : '' ?>" 
+             href="<?= base_url('agent/ganti-password') ?>">
+            <i class="fas fa-key"></i> Ganti Password
+          </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-danger" href="<?= base_url('logout') ?>">Logout</a>
+          <a class="nav-link text-danger" href="<?= base_url('logout') ?>">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
         </li>
       </ul>
     </div>

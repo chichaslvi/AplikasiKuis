@@ -32,7 +32,7 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     $routes->get('roles', 'RoleController::index');   // halaman roles
     $routes->get('reports', 'ReportController::index');        // daftar semua kuis
     $routes->get('report/detail/(:num)', 'ReportController::detail/$1'); // detail nilai peserta
-$routes->get('report/download/(:num)', 'ReportController::download/$1');
+    $routes->get('report/download/(:num)', 'ReportController::download/$1');
 
     // ==================
     // Manajemen Kuis
@@ -119,11 +119,34 @@ $routes->get('report/download/(:num)', 'ReportController::download/$1');
 // ==================
 // Reviewer Routes
 // ==================
-$routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes) {
-    $routes->get('dashboard', 'Dashboard::reviewer');
-    $routes->get('dashboard', 'reviewer::dashboard');
-    $routes->get('kuis', 'reviewer::kuis');
+$routes->group('reviewer', [
+    'filter'    => 'rolefilter:reviewer',
+    'namespace' => 'App\Controllers\Reviewer'
+], function($routes) {
+    $routes->get('dashboard', '\App\Controllers\Dashboard::reviewer');
+    // Reviewer
+    $routes->get('ganti-password', 'Password::index');
+    $routes->post('ganti-password/update', 'Password::update');
+
+
+    // Report
+    $routes->get('reports', 'ReportController::index');        
+    $routes->get('report/detail/(:num)', 'ReportController::detail/$1');
+    $routes->get('report/download/(:num)', 'ReportController::download/$1');
+
+    // Kuis
+    $routes->get('kuis', 'KuisController::index');
+    $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
+    $routes->get('kuis/create', 'KuisController::create');
+    $routes->post('kuis/store', 'KuisController::store_kuis');
+    $routes->get('kuis/edit/(:num)', 'KuisController::edit/$1');
+    $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
+    $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
+    $routes->get('kuis/archive/(:num)', 'KuisController::archive/$1');
+    $routes->get('kuis/upload/(:num)', 'KuisController::upload/$1');
+
 });
+
 
 // ==================
 // Agent Routes
@@ -131,6 +154,8 @@ $routes->group('reviewer', ['filter' => 'rolefilter:reviewer'], function($routes
 $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('dashboard', 'Agent::dashboard');
     $routes->get('soal/(:num)', 'Agent::soal/$1');
+     $routes->get('ganti-password', '\App\Controllers\Password::index');
+    $routes->post('ganti-password/update', '\App\Controllers\Password::update');
 
     // Kuis
     $routes->get('kuis', 'KuisController::agentIndex');               // daftar kuis active

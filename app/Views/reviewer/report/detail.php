@@ -192,5 +192,11 @@
   </div>
 </div>
 
+<script>
+    // 🔄 Auto-refresh halaman setiap 60 detik
+    setInterval(function() {
+        window.location.reload();
+    }, 60000); // 60000 ms = 60 detik
 
+</script>
 <?= $this->endSection() ?>

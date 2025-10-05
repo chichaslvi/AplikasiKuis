@@ -7,9 +7,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <!-- Modular CSS -->
-  <link rel="stylesheet" href="<?= base_url('css/reviewer/sidebar.css') ?>">
-  <link rel="stylesheet" href="<?= base_url('css/reviewer/navbar.css') ?>">
-  <link rel="stylesheet" href="<?= base_url('css/reviewer/main.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/admin/sidebar.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/admin/navbar.css') ?>">
+  <link rel="stylesheet" href="<?= base_url('css/admin/main.css') ?>">
 </head>
 <body>
 
