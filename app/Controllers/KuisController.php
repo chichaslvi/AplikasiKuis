@@ -188,8 +188,11 @@ class KuisController extends BaseController
         // Pastikan kuis yang sudah lewat waktu langsung diturunkan di DB
         $this->autoDeactivate();
 
-        // Ambil status & data terbaru
+        // 🔁 Aktifkan semua draft yang sudah melewati start_at (atau tanggal+waktu_mulai)
         $kuisModel = new \App\Models\KuisModel();
+        $kuisModel->autoActivateDueDrafts();   // <-- DITAMBAHKAN
+
+        // Ambil status & data terbaru
         $rows = $kuisModel->getAllKuisWithKategori(); // sudah memanggil updateStatusList()
 
         // Kirim data lengkap agar UI bisa patch tanpa reload
@@ -220,8 +223,11 @@ class KuisController extends BaseController
         // ✅ pastikan kuis yang sudah lewat waktu diturunkan
         $this->autoDeactivate();
 
-        // 🔁 Ganti ke model agar status sinkron & tidak dioverride
+        // 🔁 Aktifkan semua draft yang sudah due
         $kuisModel = new KuisModel();
+        $kuisModel->autoActivateDueDrafts();   // <-- DITAMBAHKAN
+
+        // 🔁 Ganti ke model agar status sinkron & tidak dioverride
         $data['kuis'] = $kuisModel->getAllKuisWithKategori();
 
         return view('admin/kuis/index', $data);

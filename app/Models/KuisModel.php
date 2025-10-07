@@ -192,4 +192,24 @@ class KuisModel extends Model
 
         return $row ?: null;
     }
+    public function autoActivateDueDrafts(): int
+{
+    // aktifkan semua kuis yang masih draft & sudah waktunya mulai
+    // gunakan start_at kalau ada, kalau kosong pakai tanggal + waktu_mulai
+    $now = date('Y-m-d H:i:s');
+
+    $builder = $this->db->table($this->table);
+    $builder->set('status', 'active');
+    $builder->set('updated_at', $now);
+    $builder->where('status', 'draft');
+    // COALESCE(start_at, CONCAT(tanggal, ' ', waktu_mulai)) <= NOW()
+    $builder->where("(COALESCE(start_at, CONCAT(tanggal,' ',waktu_mulai)) <= {$this->db->escape($now)})", null, false);
+
+    // (opsional) kalau mau hanya auto-aktif kalau file soal sudah ada:
+    // $builder->where('file_excel IS NOT NULL', null, false);
+
+    $builder->update();
+
+    return $this->db->affectedRows(); // berapa baris yang berubah
+}
 }
