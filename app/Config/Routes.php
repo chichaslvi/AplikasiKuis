@@ -154,7 +154,7 @@ $routes->group('reviewer', [
 $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     $routes->get('dashboard', 'Agent::dashboard');
     $routes->get('soal/(:num)', 'Agent::soal/$1');
-     $routes->get('ganti-password', '\App\Controllers\Password::index');
+    $routes->get('ganti-password', '\App\Controllers\Password::index');
     $routes->post('ganti-password/update', '\App\Controllers\Password::update');
 
     // Kuis
@@ -164,6 +164,7 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
 
     // Riwayat & Ulangi
     $routes->get('riwayat', 'Agent::riwayat');
+
     $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
 });
 
@@ -183,3 +184,12 @@ $routes->get('agent/kuis/(:num)', 'KuisController::kerjakan/$1');
 $routes->get('agent/statusKuis', 'Agent::statusKuis');
 // ✅ Long-poll untuk realtime update dashboard agent saat admin mengedit kuis aktif
 $routes->get('agent/statusKuisLP', 'Agent::statusKuisLP');
+
+$routes->group('quiz', ['filter' => 'rolefilter:agent'], static function($routes) {
+    $routes->get('(:num)/status',  'KuisController::status/$1');
+    $routes->post('(:num)/start',  'KuisController::start/$1');
+    $routes->get('attempt/(:num)', 'KuisController::attempt/$1');
+    $routes->post('attempt/(:num)/submit',  'KuisController::submit/$1');
+    $routes->post('attempt/(:num)/abandon', 'KuisController::abandon/$1');
+    $routes->get('attempt/(:num)/result',   'KuisController::result/$1');
+});

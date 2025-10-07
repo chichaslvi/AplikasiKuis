@@ -81,11 +81,11 @@
     <table class="table table-bordered mb-0">
       <tr>
         <th>Nama Kuis</th>
-        <td><?= esc($kuis['nama_kuis']) ?></td>
+        <td><?= esc($hasil['nama_kuis']) ?></td>
       </tr>
       <tr>
         <th>Topik Kuis</th>
-        <td><?= esc($kuis['topik']) ?></td>
+        <td><?= esc($hasil['topik']) ?></td>
       </tr>
       <tr>
         <th>Jumlah Soal</th>
@@ -93,7 +93,7 @@
       </tr>
       <tr>
         <th>Jawaban Benar</th>
-        <td><?= esc($hasil['jawaban_benar']) ?></td>
+        <td><?= esc(data: $hasil['jawaban_benar']) ?></td>
       </tr>
       <tr>
         <th>Jawaban Salah</th>
@@ -106,7 +106,7 @@
     </table>
 
     <div class="hasil-buttons">
-      <a href="<?= base_url('agent/hasil/detail/'.$kuis['id_kuis']) ?>" class="btn-detail">Lihat Detail</a>
+      <a href="<?= base_url('agent/hasil/detail/'.$hasil['id_kuis']) ?>" class="btn-detail">Lihat Detail</a>
       <a href="<?= base_url('agent/riwayat') ?>" class="btn-back">Kembali ke Riwayat</a>
     </div>
   </div>
