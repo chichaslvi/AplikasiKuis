@@ -7,27 +7,23 @@ use App\Models\SoalModel;
 use App\Models\UserModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use App\Models\HasilKuisModel;
-use CodeIgniter\I18n\Time; // ⬅️ ditambahkan
+use CodeIgniter\I18n\Time;
 
 class Agent extends BaseController
 {
     protected $kuisModel;
     protected $soalModel;
     protected $userModel;
-    protected $hasilModel; // ➕ tambahkan di sini
+    protected $hasilModel;
 
     public function __construct()
     {
         $this->kuisModel  = new KuisModel();
         $this->soalModel  = new SoalModel();
         $this->userModel  = new UserModel();
-        $this->hasilModel = new HasilKuisModel(); // ➕ inisialisasi di sini
+        $this->hasilModel = new HasilKuisModel();
     }
 
-    /**
-     * Pastikan user sudah login & role = agent.
-     * Return RedirectResponse jika gagal, atau null jika valid.
-     */
     private function ensureAgent()
     {
         $session = session();
@@ -43,6 +39,51 @@ class Agent extends BaseController
         }
 
         return null;
+    }
+
+    /**
+     * Buat attempt ketika masuk halaman soal (tetap sama).
+     */
+    private function startAttempt(array $kuis, int $userId): void
+    {
+        $kuisId = (int)($kuis['id_kuis'] ?? 0);
+        if ($kuisId <= 0) return;
+
+        $existing = $this->hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $kuisId)
+            ->where('status', 'in_progress')
+            ->orderBy('started_at', 'DESC')
+            ->first();
+        if ($existing) return;
+
+        $alreadyPerfect = $this->hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $kuisId)
+            ->where('total_skor', 100)
+            ->countAllResults();
+        if ($alreadyPerfect > 0) return;
+
+        $attemptCount = $this->hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $kuisId)
+            ->countAllResults();
+
+        $limit = (int)($kuis['batas_pengulangan'] ?? 0);
+        if ($limit > 0 && $attemptCount >= $limit) return;
+
+        $this->hasilModel->insert([
+            'id_user'            => $userId,
+            'id_kuis'            => $kuisId,
+            'jumlah_soal'        => 0,
+            'jawaban_benar'      => 0,
+            'jawaban_salah'      => 0,
+            'total_skor'         => 0,
+            'tanggal_pengerjaan' => date('Y-m-d H:i:s'),
+            'status'             => 'in_progress',
+            'started_at'         => date('Y-m-d H:i:s'),
+            'jumlah_pengerjaan'  => $attemptCount + 1,
+        ]);
     }
 
     /**
@@ -66,26 +107,46 @@ class Agent extends BaseController
         $now = Time::now('Asia/Jakarta');
 
         foreach ($kuisList as &$k) {
-            // rakit datetime mulai/selesai
+            // waktu
             $startAt = $k['start_at'] ?? null;
             $endAt   = $k['end_at']   ?? null;
-
             if (!$startAt && !empty($k['tanggal']) && !empty($k['waktu_mulai'])) {
                 $startAt = $k['tanggal'].' '.$k['waktu_mulai'];
             }
             if (!$endAt && !empty($k['tanggal']) && !empty($k['waktu_selesai'])) {
                 $endAt = $k['tanggal'].' '.$k['waktu_selesai'];
             }
-
             $start = $startAt ? Time::parse($startAt, 'Asia/Jakarta') : null;
             $end   = $endAt   ? Time::parse($endAt,   'Asia/Jakarta') : null;
 
-            $k['can_start'] = ($start && $end) && ($now >= $start && $now <= $end);
+            // default status by time
+            if (!$start || !$end)            $ui = 'Tidak Tersedia';
+            elseif ($now < $start)           $ui = 'Belum Dibuka';
+            elseif ($now > $end)             $ui = 'Sudah Selesai';
+            else                             $ui = 'Mulai';
 
-            if (!$start || !$end)            $k['ui_status'] = 'Tidak Tersedia';
-            elseif ($now < $start)           $k['ui_status'] = 'Belum Dibuka';
-            elseif ($now > $end)             $k['ui_status'] = 'Sudah Selesai';
-            else                             $k['ui_status'] = 'Mulai';
+            $timeOk = ($start && $end) && ($now >= $start && $now <= $end);
+
+            // ==== tambahan: batas pengulangan & nilai 100 ====
+            $attemptUsed = $this->hasilModel
+                ->where('id_user', $userId)
+                ->where('id_kuis', (int)$k['id_kuis'])
+                ->countAllResults();
+
+            $hasPerfect = $this->hasilModel
+                ->where('id_user', $userId)
+                ->where('id_kuis', (int)$k['id_kuis'])
+                ->where('total_skor', 100)
+                ->countAllResults() > 0;
+
+            $limit = (int)($k['batas_pengulangan'] ?? 0);
+
+            $limitOk = ($limit === 0) || ($attemptUsed < $limit);
+            if ($timeOk && !$limitOk) $ui = 'Jatah Habis';
+            if ($timeOk && $hasPerfect) $ui = 'Nilai 100';
+
+            $k['can_start'] = $timeOk && $limitOk && !$hasPerfect;
+            $k['ui_status'] = $k['can_start'] ? 'Mulai' : $ui;
         }
 
         return view('agent/dashboard', [
@@ -102,27 +163,46 @@ class Agent extends BaseController
         if ($resp = $this->ensureAgent()) return $resp;
 
         $katId    = (int) session('kategori_agent_id');
+        $userId   = (int) session()->get('user_id');
         $kuisList = $this->kuisModel->getAvailableKuisForAgentKategori($katId);
 
         $now     = Time::now('Asia/Jakarta');
         $result  = [];
 
         foreach ($kuisList as $k) {
-            // rakit datetime mulai/selesai
+            // waktu
             $startAt = $k['start_at'] ?? (isset($k['tanggal'], $k['waktu_mulai']) ? ($k['tanggal'].' '.$k['waktu_mulai']) : null);
             $endAt   = $k['end_at']   ?? (isset($k['tanggal'], $k['waktu_selesai']) ? ($k['tanggal'].' '.$k['waktu_selesai']) : null);
-
             $start = $startAt ? Time::parse($startAt, 'Asia/Jakarta') : null;
             $end   = $endAt   ? Time::parse($endAt,   'Asia/Jakarta') : null;
 
-            $canStart = ($start && $end) && ($now >= $start && $now <= $end);
+            if (!$start || !$end)            $ui = 'Tidak Tersedia';
+            elseif ($now < $start)           $ui = 'Belum Dibuka';
+            elseif ($now > $end)             $ui = 'Sudah Selesai';
+            else                             $ui = 'Mulai';
 
-            if (!$start || !$end)            $ui_status = 'Tidak Tersedia';
-            elseif ($now < $start)           $ui_status = 'Belum Dibuka';
-            elseif ($now > $end)             $ui_status = 'Sudah Selesai';
-            else                             $ui_status = 'Mulai';
+            $timeOk = ($start && $end) && ($now >= $start && $now <= $end);
 
-            // ➕ kirim detail minimal agar dashboard bisa render kartu baru tanpa refresh
+            // batas & perfect
+            $attemptUsed = $this->hasilModel
+                ->where('id_user', $userId)
+                ->where('id_kuis', (int)$k['id_kuis'])
+                ->countAllResults();
+
+            $hasPerfect = $this->hasilModel
+                ->where('id_user', $userId)
+                ->where('id_kuis', (int)$k['id_kuis'])
+                ->where('total_skor', 100)
+                ->countAllResults() > 0;
+
+            $limit = (int)($k['batas_pengulangan'] ?? 0);
+
+            $limitOk = ($limit === 0) || ($attemptUsed < $limit);
+            if ($timeOk && !$limitOk) $ui = 'Jatah Habis';
+            if ($timeOk && $hasPerfect) $ui = 'Nilai 100';
+
+            $canStart = $timeOk && $limitOk && !$hasPerfect;
+
             $result[] = [
                 'id_kuis'       => (int) ($k['id_kuis'] ?? 0),
                 'nama_kuis'     => (string) ($k['nama_kuis'] ?? ''),
@@ -133,7 +213,7 @@ class Agent extends BaseController
                 'start_at'      => $startAt,
                 'end_at'        => $endAt,
                 'can_start'     => $canStart,
-                'ui_status'     => $ui_status,
+                'ui_status'     => $canStart ? 'Mulai' : $ui,
             ];
         }
 
@@ -144,17 +224,17 @@ class Agent extends BaseController
     }
 
     /**
-     * ✅ Long-poll: push perubahan kuis ke dashboard agent tanpa refresh
-     * Client mengirim ?sig=... (tanda versi terakhir). Server balas cepat jika ada perubahan.
+     * ✅ Long-poll status kuis
      */
     public function statusKuisLP()
     {
         if ($resp = $this->ensureAgent()) return $resp;
 
         $katId    = (int) session('kategori_agent_id');
+        $userId   = (int) session()->get('user_id');
         $lastSig  = (string) ($this->request->getGet('sig') ?? '');
-        $timeoutS = 25;          // durasi long-poll (detik)
-        $sleepUs  = 500000;      // cek setiap 0.5s
+        $timeoutS = 25;
+        $sleepUs  = 500000;
         $deadline = microtime(true) + $timeoutS;
 
         $nowTZ = 'Asia/Jakarta';
@@ -171,12 +251,31 @@ class Agent extends BaseController
                 $start = $startAt ? Time::parse($startAt, $nowTZ) : null;
                 $end   = $endAt   ? Time::parse($endAt,   $nowTZ) : null;
 
-                $canStart = ($start && $end) && ($now >= $start && $now <= $end);
-
                 if (!$start || !$end)         $ui = 'Tidak Tersedia';
                 elseif ($now < $start)        $ui = 'Belum Dibuka';
                 elseif ($now > $end)          $ui = 'Sudah Selesai';
                 else                          $ui = 'Mulai';
+
+                $timeOk = ($start && $end) && ($now >= $start && $now <= $end);
+
+                $attemptUsed = $this->hasilModel
+                    ->where('id_user', $userId)
+                    ->where('id_kuis', (int)$k['id_kuis'])
+                    ->countAllResults();
+
+                $hasPerfect = $this->hasilModel
+                    ->where('id_user', $userId)
+                    ->where('id_kuis', (int)$k['id_kuis'])
+                    ->where('total_skor', 100)
+                    ->countAllResults() > 0;
+
+                $limit = (int)($k['batas_pengulangan'] ?? 0);
+
+                $limitOk = ($limit === 0) || ($attemptUsed < $limit);
+                if ($timeOk && !$limitOk) $ui = 'Jatah Habis';
+                if ($timeOk && $hasPerfect) $ui = 'Nilai 100';
+
+                $canStart = $timeOk && $limitOk && !$hasPerfect;
 
                 $result[] = [
                     'id_kuis'       => (int) ($k['id_kuis'] ?? 0),
@@ -188,14 +287,12 @@ class Agent extends BaseController
                     'start_at'      => $startAt,
                     'end_at'        => $endAt,
                     'can_start'     => $canStart,
-                    'ui_status'     => $ui,
+                    'ui_status'     => $canStart ? 'Mulai' : $ui,
                 ];
             }
 
-            // tanda versi payload
             $sig = md5(json_encode($result));
 
-            // kalau ada perubahan → kirim segera
             if ($sig !== $lastSig) {
                 return $this->response->setJSON(['ok' => true, 'sig' => $sig, 'data' => $result]);
             }
@@ -203,13 +300,11 @@ class Agent extends BaseController
             usleep($sleepUs);
         } while (microtime(true) < $deadline);
 
-        // tidak ada perubahan dalam window → balas kosong agar client langsung long-poll lagi
         return $this->response->setJSON(['ok' => true, 'sig' => $lastSig, 'data' => null]);
     }
 
-    /**
-     * Detail Kuis
-     */
+    // ======= bagian lain TIDAK DIUBAH =======
+
     public function detailKuis($id = null)
     {
         if ($resp = $this->ensureAgent()) {
@@ -221,10 +316,8 @@ class Agent extends BaseController
             throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
         }
 
-        // 🧩 Ambil kategori agent dari session
         $katId = (int) session('kategori_agent_id');
 
-        // ✅ Pastikan kuis hanya bisa diakses sesuai kategori
         $kuis = $this->kuisModel->getKuisByIdForAgent($id, $katId);
         if (!$kuis) {
             throw PageNotFoundException::forPageNotFound("Kuis tidak ditemukan atau bukan kategori Anda.");
@@ -238,9 +331,6 @@ class Agent extends BaseController
         return view('agent/detailKuis', $data);
     }
 
-    /**
-     * Daftar Soal Kuis
-     */
     public function soal($id_kuis = null)
     {
         if ($resp = $this->ensureAgent()) {
@@ -254,16 +344,13 @@ class Agent extends BaseController
             throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
         }
 
-        // 🧩 Ambil kategori agent dari session
         $katId = (int) session('kategori_agent_id');
 
-        // ✅ Pastikan kuis hanya bisa diakses sesuai kategori
         $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
         if (!$kuis) {
             throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
         }
 
-        // ==== LOCK BY WAKTU (tahan akses sebelum waktunya / sesudah berakhir) ====
         $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
                  : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
         $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
@@ -277,7 +364,8 @@ class Agent extends BaseController
         if (!$within) {
             return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
         }
-        // ==== END LOCK ====
+
+        $this->startAttempt($kuis, (int)session()->get('user_id'));
 
         $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
 
@@ -290,12 +378,6 @@ class Agent extends BaseController
         return view('agent/soal', $data);
     }
 
-    /**
-     * Ulangi Kuis (pakai view yang sama dengan soal)
-     * Selaras dengan route:
-     * - /agent/ulangi-quiz/(:num)
-     * - /ulangi-quiz/(:num)  [alias global]
-     */
     public function ulangiQuiz($id_kuis = null)
     {
         if ($resp = $this->ensureAgent()) {
@@ -309,16 +391,13 @@ class Agent extends BaseController
             throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
         }
 
-        // 🧩 Ambil kategori agent dari session
         $katId = (int) session('kategori_agent_id');
 
-        // ✅ Pastikan kuis hanya bisa diakses sesuai kategori
         $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
         if (!$kuis) {
             throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
         }
 
-        // ==== LOCK BY WAKTU (samakan dengan soal) ====
         $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
                  : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
         $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
@@ -332,7 +411,8 @@ class Agent extends BaseController
         if (!$within) {
             return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
         }
-        // ==== END LOCK ====
+
+        $this->startAttempt($kuis, (int)session()->get('user_id'));
 
         $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
 
@@ -342,13 +422,9 @@ class Agent extends BaseController
             'soalList'  => $soalList,
         ];
 
-        // pakai view yang sama
         return view('agent/soal', $data);
     }
 
-    /**
-     * Kerjakan Kuis (halaman pengerjaan)
-     */
     public function kerjakan($id_kuis = null)
     {
         if ($resp = $this->ensureAgent()) {
@@ -360,16 +436,13 @@ class Agent extends BaseController
             throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
         }
 
-        // 🧩 Ambil kategori agent dari session
         $katId = (int) session('kategori_agent_id');
 
-        // ✅ Pastikan kuis hanya bisa diakses sesuai kategori
         $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
         if (!$kuis) {
             throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
         }
 
-        // ==== LOCK BY WAKTU (tahan akses sebelum waktunya / sesudah berakhir) ====
         $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
                  : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
         $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
@@ -383,7 +456,8 @@ class Agent extends BaseController
         if (!$within) {
             return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
         }
-        // ==== END LOCK ====
+
+        $this->startAttempt($kuis, (int)session()->get('user_id'));
 
         $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
 
@@ -399,7 +473,9 @@ class Agent extends BaseController
     {
         if ($resp = $this->ensureAgent()) return $resp;
 
-        // Terima JSON { id_kuis, answers: { "1":"A", "2":"C", ... } }
+        // === LOG untuk memastikan request masuk ===
+        log_message('info', '[submitKuis] HIT user_id={uid}', ['uid' => (int)session()->get('user_id')]);
+
         $payload = $this->request->getJSON(true);
         $idKuis  = (int)($payload['id_kuis'] ?? 0);
         $answers = $payload['answers'] ?? [];
@@ -414,62 +490,127 @@ class Agent extends BaseController
             return $this->response->setStatusCode(404)->setJSON(['ok'=>false,'msg'=>'Kuis tidak ditemukan']);
         }
 
-        // Ambil urutan soal seperti di view (findAll default by PK ASC)
-        $soalList = $this->soalModel->where('id_kuis', $idKuis)->orderBy('id','ASC')->findAll();
+        $soalList = $this->soalModel
+            ->where('id_kuis', $idKuis)
+            ->orderBy($this->soalModel->primaryKey, 'ASC')
+            ->findAll();
 
-        $benar = 0; $total = count($soalList);
+        $benar = 0;
+        $total = count($soalList);
 
-        // Cocokkan jawaban user (huruf) dengan kunci (huruf/teks)
         $i = 1;
         foreach ($soalList as $row) {
-            $userKey = $answers[(string)$i] ?? $answers[$i] ?? null; // "A"/"B"/...
-            if (!$userKey) { $i++; continue; }
-
-            $opt = [
-                'A' => $row['pilihan_a'] ?? null,
-                'B' => $row['pilihan_b'] ?? null,
-                'C' => $row['pilihan_c'] ?? null,
-                'D' => $row['pilihan_d'] ?? null,
-                'E' => $row['pilihan_e'] ?? null,
-            ];
-
-            $kunciRaw = trim((string)($row['jawaban'] ?? ''));
-            $kunciKey = null;
-            if (in_array($kunciRaw, ['A','B','C','D','E'], true)) {
-                $kunciKey = $kunciRaw;
-            } else {
-                foreach ($opt as $k => $val) {
-                    if ($val !== null && strcasecmp($kunciRaw, (string)$val) === 0) { $kunciKey = $k; break; }
+            $userKey = $answers[(string)$i] ?? $answers[$i] ?? null;
+            if ($userKey) {
+                $opt = [
+                    'A' => $row['pilihan_a'] ?? null,
+                    'B' => $row['pilihan_b'] ?? null,
+                    'C' => $row['pilihan_c'] ?? null,
+                    'D' => $row['pilihan_d'] ?? null,
+                    'E' => $row['pilihan_e'] ?? null,
+                ];
+                $kunciRaw = trim((string)($row['jawaban'] ?? ''));
+                $kunciKey = null;
+                if (in_array($kunciRaw, ['A','B','C','D','E'], true)) {
+                    $kunciKey = $kunciRaw;
+                } else {
+                    foreach ($opt as $k => $val) {
+                        if ($val !== null && strcasecmp($kunciRaw, (string)$val) === 0) {
+                            $kunciKey = $k;
+                            break;
+                        }
+                    }
                 }
+                if ($kunciKey && $userKey === $kunciKey) $benar++;
             }
-
-            if ($kunciKey && $userKey === $kunciKey) $benar++;
             $i++;
         }
 
         $salah = $total - $benar;
-        $skor  = $total > 0 ? round(($benar / $total) * 100) : 0;
-        // Simpan / upsert (jika user submit 2x, overwrite)
-        $existing = $this->hasilModel->where(['id_user'=>$userId,'id_kuis'=>$idKuis])->first();
-        $data = [
-            'id_user'        => $userId,
-            'id_kuis'        => $idKuis,
-            'jumlah_soal'    => $total,
-            'jawaban_benar'  => $benar,
-            'jawaban_salah'  => $salah,
-            'total_skor'     => $skor,
-            'finished_at'    => date('Y-m-d H:i:s'),
+        $skor  = $total > 0 ? (int) round(($benar / $total) * 100) : 0;
+
+        $attempt = $this->hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $idKuis)
+            ->where('status', 'in_progress')
+            ->orderBy('started_at', 'DESC')
+            ->first();
+
+        $dataUpdate = [
+            'jumlah_soal'        => $total,
+            'jawaban_benar'      => $benar,
+            'jawaban_salah'      => $salah,
+            'total_skor'         => $skor,
+            'status'             => 'finished',
+            'finished_at'        => date('Y-m-d H:i:s'),
         ];
-        if ($existing) {
-            $this->hasilModel->update($existing['id'], $data);
+
+        if ($attempt) {
+            $ok = $this->hasilModel->update((int)$attempt['id_hasil'], $dataUpdate);
+            log_message('info', '[submitKuis] UPDATE attempt={id} ok={ok}', [
+                'id' => (int)$attempt['id_hasil'],
+                'ok' => $ok ? 1 : 0
+            ]);
         } else {
-            $this->hasilModel->insert($data);
+            $dataInsert = [
+                'id_user'            => $userId,
+                'id_kuis'            => $idKuis,
+                'jumlah_soal'        => $total,
+                'jawaban_benar'      => $benar,
+                'jawaban_salah'      => $salah,
+                'total_skor'         => $skor,
+                'tanggal_pengerjaan' => date('Y-m-d H:i:s'),
+                'status'             => 'finished',
+                'finished_at'        => date('Y-m-d H:i:s'),
+            ];
+            $newId = $this->hasilModel->insert($dataInsert, true);
+            log_message('info', '[submitKuis] INSERT id_hasil={id}', ['id' => (int)$newId]);
         }
 
-        return $this->response->setJSON([
+        $payloadResp = [
             'ok' => true,
             'ringkas' => [
-                'total' => $total, 'benar' => $benar, 'salah' => $salah, 'skor' => $skor],
-        ]);
+                'total' => $total,
+                'benar' => $benar,
+                'salah' => $salah,
+                'skor'  => $skor
+            ],
+        ];
+
+        // (opsional) kirim token baru bila CI4 meregenerasi token setiap request
+        $hdrName = function_exists('csrf_header') ? csrf_header() : 'X-CSRF-TOKEN';
+        $hdrHash = function_exists('csrf_hash')   ? csrf_hash()   : '';
+
+        return $this->response
+            ->setHeader('X-CSRF-HEADER', $hdrName)
+            ->setHeader('X-CSRF-TOKEN',  $hdrHash)
+            ->setJSON($payloadResp);
     }
+    public function riwayat()
+{
+    $userId = session()->get('user_id'); // atau nanti kita pastikan lagi
+
+    $data['riwayat'] = $this->hasilModel->getRiwayatByUser($userId);
+    return view('agent/riwayat', $data);
+}
+
+
+    // halaman hasil kuis
+    public function hasil($idKuis)
+{
+    $userId = session()->get('user_id');
+    $db = \Config\Database::connect();
+
+    $hasil = $db->table('kuis_hasil kh')
+        ->select('kh.*, k.nama_kuis, k.topik')
+        ->join('kuis k', 'k.id_kuis = kh.id_kuis')
+        ->where('kh.id_user', $userId)
+        ->where('kh.id_kuis', $idKuis)
+        ->get()
+        ->getRowArray();
+
+    $data['hasil'] = $hasil; // ✅ ubah ke 'hasil'
+
+    return view('agent/hasil', $data);
+}
 }

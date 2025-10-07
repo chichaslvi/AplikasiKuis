@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Soal Kuis</title>
 
-  <!-- CSRF untuk AJAX -->
-  <meta name="X-CSRF-HEADER" content="X-CSRF-TOKEN">
-  <meta name="X-CSRF-TOKEN" content="<?= csrf_hash() ?>">
+  <!-- CSRF untuk AJAX (DISESUAIKAN) -->
+  <meta name="csrf-header" content="<?= csrf_header() ?>">
+  <meta name="csrf-token"  content="<?= csrf_hash() ?>">
 
   <!-- Bootstrap CSS & Icons -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -69,7 +69,7 @@
     /* Footer */
     footer {
       background: #ffffff; color: #555; padding: 10px; text-align: center; font-size: 13px;
-      border-top: 1px solid #eee; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+      border-top: 1px solid #eee; box-shadow: inset 1px 0 3px rgba(0,0,0,0.05);
     }
 
     /* Hasil */
@@ -116,30 +116,17 @@
     if (in_array($jawabanRaw, ['A','B','C','D','E'], true)) {
       $correctKey = $jawabanRaw;
     } else {
-      $map = [
-        'A' => $optA,
-        'B' => $optB,
-        'C' => $optC,
-        'D' => $optD,
-        'E' => $optE,
-      ];
+      $map = ['A'=>$optA,'B'=>$optB,'C'=>$optC,'D'=>$optD,'E'=>$optE];
       foreach ($map as $key => $val) {
         if ($val !== null && strcasecmp($jawabanRaw, (string)$val) === 0) {
-          $correctKey = $key;
-          break;
+          $correctKey = $key; break;
         }
       }
     }
 
     $questionsArr[$no] = [
       'q' => $item['soal'] ?? '',
-      'options' => [
-        'A' => $optA,
-        'B' => $optB,
-        'C' => $optC,
-        'D' => $optD,
-        'E' => $optE,
-      ],
+      'options' => ['A'=>$optA,'B'=>$optB,'C'=>$optC,'D'=>$optD,'E'=>$optE],
       'correct' => $correctKey,
     ];
     $no++;
@@ -189,7 +176,6 @@
           <tr><th>Total Skor</th><td id="finalScore">0</td></tr>
         </table>
         <div class="d-flex justify-content-center gap-3">
-          <!-- Tombol Ulangi akan muncul jika skor < nilai_minimum -->
           <a id="retryBtn" href="<?= base_url('ulangi-quiz/'.$kuis['id_kuis']); ?>" class="btn btn-primary" style="display:none;">Ulangi Quiz</a>
           <a href="<?= base_url('dashboard'); ?>" class="btn btn-secondary">Selesai</a>
         </div>
@@ -327,7 +313,64 @@
       confirmModal = new bootstrap.Modal(confirmModalEl);
     }
 
-    function hitungDanTampilkanHasil() {
+    // ➕ endpoint snapshot (opsional, tidak mengganggu submit)
+    const STATUS_SNAP_URL = '<?= base_url('agent/statusKuis') ?>';
+    const idKuis = <?= (int)($kuis['id_kuis'] ?? 0) ?>;
+
+    async function getAttemptInfo() {
+      try {
+        const res = await fetch(STATUS_SNAP_URL, {
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          cache: 'no-store',
+          credentials: 'same-origin'
+        });
+        if (!res.ok) return null;
+        const json = await res.json();
+        if (!json || !json.ok || !Array.isArray(json.data)) return null;
+        const row = json.data.find(x => parseInt(x.id_kuis,10) === idKuis);
+        if (!row) return null;
+        return {
+          limit: parseInt(row.batas_pengulangan ?? 0, 10) || 0,
+          count: parseInt(row.attempt_count ?? 0, 10) || 0
+        };
+      } catch { return null; }
+    }
+
+    // === SUBMIT ke server (DISESUAIKAN) ===
+    async function submitToServer(payload) {
+      const hdr = document.querySelector('meta[name="csrf-header"]').content;
+      const tok = document.querySelector('meta[name="csrf-token"]').content;
+
+      const res = await fetch('<?= base_url('agent/kuis/submit'); ?>', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          [hdr]: tok
+        },
+        body: JSON.stringify(payload),
+        credentials: 'same-origin'
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(()=> '');
+        alert('Gagal menyimpan hasil (' + res.status + ').\n' + t);
+        throw new Error('Submit failed ' + res.status);
+      }
+
+      // jika server mengirimkan token baru, simpan ke meta
+      const newHdr = res.headers.get('X-CSRF-HEADER');
+      const newTok = res.headers.get('X-CSRF-TOKEN');
+      if (newHdr && newTok) {
+        document.querySelector('meta[name="csrf-header"]').content = newHdr;
+        document.querySelector('meta[name="csrf-token"]').content  = newTok;
+      }
+
+      return res.json().catch(()=>({ok:true}));
+    }
+
+    // Tampilkan hasil & simpan
+    async function hitungDanTampilkanHasil() {
       // cegah double submit
       const finishBtnEl = document.getElementById("finishBtn");
       if (finishBtnEl) finishBtnEl.disabled = true;
@@ -349,58 +392,47 @@
       if (wrongEl)   wrongEl.innerText   = salah;
       if (scoreEl)   scoreEl.innerText   = skor;
 
-      // Tampilkan tombol "Ulangi Quiz" hanya jika skor < nilai_minimum
-      const retryBtn = document.getElementById("retryBtn");
-      if (typeof passingScore !== "undefined" && retryBtn) {
-        retryBtn.style.display = (skor < passingScore) ? "inline-block" : "none";
-      }
-
       // Tampilkan section hasil
       const quizSec   = document.getElementById("quizSection");
       const resultSec = document.getElementById("resultSection");
       if (quizSec)   quizSec.style.display   = "none";
       if (resultSec) resultSec.style.display = "block";
 
-      // ===== Kirim ke server untuk disimpan (TANPA redirect) =====
-      const headers = {
-        "Content-Type": "application/json",
-        "X-Requested-With": "XMLHttpRequest"
-      };
-      const csrfHeaderMeta = document.querySelector('meta[name="X-CSRF-HEADER"]');
-      const csrfTokenMeta  = document.querySelector('meta[name="X-CSRF-TOKEN"]');
-      if (csrfHeaderMeta && csrfTokenMeta) {
-        headers[csrfHeaderMeta.content] = csrfTokenMeta.content;
+      // Kirim ke server untuk disimpan
+      try {
+        await submitToServer({ id_kuis: idKuis, answers });
+      } catch (err) {
+        console.error(err);
+        // UI tetap jalan; DB akan kelihatan tidak update jika submit gagal.
       }
 
-      const idKuis = <?= (int)($kuis['id_kuis'] ?? 0) ?>;
-
-      fetch('<?= base_url('agent/kuis/submit'); ?>', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ id_kuis: idKuis, answers })
-      })
-      .then(async (res) => {
-        if (!res.ok) throw new Error('Submit gagal');
-        return true;
-      })
-      .catch((err) => {
-        console.error(err);
-        // biarkan user tetap melihat hasil; tidak ada redirect
-      });
+      // Tentukan visibilitas tombol Ulangi
+      const retryBtn = document.getElementById("retryBtn");
+      if (retryBtn) {
+        let canShow = (skor < passingScore);
+        const info = await getAttemptInfo();
+        if (info) {
+          const limit = info.limit, count = info.count;
+          const masihAdaJatah = (limit === 0) || (count < limit);
+          canShow = (skor < passingScore) && masihAdaJatah;
+        }
+        retryBtn.style.display = canShow ? "inline-block" : "none";
+      }
     }
 
     // Handler tombol
-    if (finishBtn) {
-      finishBtn.addEventListener("click", () => {
+    const finishBtnEl = document.getElementById("finishBtn");
+    const confirmYesBtn = document.getElementById("confirmYes");
+
+    if (finishBtnEl) {
+      finishBtnEl.addEventListener("click", () => {
         if (confirmModal) { confirmModal.show(); }
         else { hitungDanTampilkanHasil(); }
       });
     }
-
-    const confirmYesBtn = document.getElementById("confirmYes");
     if (confirmYesBtn) {
-      confirmYesBtn.addEventListener("click", () => {
-        hitungDanTampilkanHasil();
+      confirmYesBtn.addEventListener("click", async () => {
+        await hitungDanTampilkanHasil();
         if (confirmModal) confirmModal.hide();
       });
     }

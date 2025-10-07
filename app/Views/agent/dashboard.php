@@ -105,6 +105,14 @@
     .replace(/'/g,'&#039;'); }
   function timeHHMM(t){ return (t||'').slice(0,5); }
 
+  // ➕ cek limit habis (batas_pengulangan & attempt_count dari server)
+  function limitExceeded(k){
+    const limit = parseInt(k && k.batas_pengulangan != null ? k.batas_pengulangan : 0, 10);
+    const count = parseInt(k && k.attempt_count != null ? k.attempt_count : 0, 10);
+    const hasIP = !!(k && k.has_in_progress);
+    return limit > 0 && count >= limit && !hasIP;
+  }
+
   // ✅ Banner otomatis: hide jika ada .quiz-card, show kalau kosong
   function updateBannerVisibility(){
     if (!emptyEl) return;
@@ -119,6 +127,10 @@
 
   // ========= View helpers =========
   function statusBtnHtml(k){
+    // 🧠 hormati limit di UI, walau server sudah set can_start/ui_status
+    if (limitExceeded(k)) {
+      return `<button class="btn btn-secondary status-btn" data-id="${k.id_kuis}" disabled>Batas Habis</button>`;
+    }
     if (k.can_start) {
       return `<a href="<?= base_url('agent/soal/') ?>${k.id_kuis}" class="btn btn-start status-btn" data-id="${k.id_kuis}">
                 <i class="bi bi-play-circle me-1"></i> Mulai
@@ -167,10 +179,25 @@
       }
     }
 
-    // Toggle tombol
+    // Toggle tombol (hormati limit)
     const btn = card.querySelector('.status-btn');
+    const mustDisableByLimit = limitExceeded(k);
+
     if (btn) {
-      if (k.can_start) {
+      if (mustDisableByLimit) {
+        // paksa jadi disabled "Batas Habis"
+        if (btn.tagName === 'A') {
+          const b = document.createElement('button');
+          b.className = 'btn btn-secondary status-btn';
+          b.dataset.id = k.id_kuis;
+          b.disabled = true;
+          b.textContent = 'Batas Habis';
+          btn.replaceWith(b);
+        } else {
+          btn.textContent = 'Batas Habis';
+          btn.disabled = true;
+        }
+      } else if (k.can_start) {
         if (btn.tagName === 'BUTTON') {
           const a = document.createElement('a');
           a.href = '<?= base_url('agent/soal/') ?>' + k.id_kuis;
@@ -185,15 +212,18 @@
           btn.removeAttribute('aria-disabled');
         }
       } else {
+        // non-start case: tampilkan status dari server
+        const label = esc(k.ui_status);
         if (btn.tagName === 'A') {
           const b = document.createElement('button');
           b.className = 'btn btn-secondary status-btn';
           b.dataset.id = k.id_kuis;
           b.disabled = true;
-          b.textContent = k.ui_status;
+          b.textContent = label;
           btn.replaceWith(b);
         } else {
-          btn.textContent = k.ui_status;
+          btn.textContent = label;
+          btn.disabled = true;
         }
       }
     }
@@ -220,7 +250,6 @@
   let retryDelay = 1000;     // backoff awal
 
   async function longPoll() {
-    // Abort otomatis kalau lebih dari ~28s (server timebox 25s)
     const ctl = new AbortController();
     const killer = setTimeout(() => ctl.abort(), 28000);
 
@@ -236,13 +265,10 @@
 
       if (json && json.ok) {
         if (json.data) {
-          // Ada perubahan: render snapshot terbaru
           applySnapshot(json.data);
         }
-        // Update signature dari server (tetap pakai yang lama kalau data null)
         if (json.sig) currentSig = json.sig;
 
-        // reset backoff & lanjut long-poll lagi
         retryDelay = 1000;
         longPoll();
         return;
@@ -250,7 +276,6 @@
       throw new Error('LP payload not ok');
     } catch (e) {
       clearTimeout(killer);
-      // fallback: ambil snapshot sekali lalu coba long-poll lagi dengan backoff
       try {
         const snap = await fetch(ENDPOINT_SNAP, {
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -258,11 +283,9 @@
         }).then(r => r.json()).catch(()=>null);
         if (snap && snap.ok && Array.isArray(snap.data)) {
           applySnapshot(snap.data);
-          // biarkan currentSig kosong; server akan push data pada LP berikutnya
         }
       } catch (_) { /* ignore */ }
 
-      // backoff sederhana
       setTimeout(longPoll, retryDelay);
       retryDelay = Math.min(retryDelay * 2, 10000);
     }

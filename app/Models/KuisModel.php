@@ -10,12 +10,14 @@ class KuisModel extends Model
     protected $primaryKey = 'id_kuis';
     protected $returnType = 'array';
 
+    // 🔁 Gabungan allowedFields dari KuisModel versi 1 & 2 (tanpa duplikasi)
     protected $allowedFields = [
         'nama_kuis',
         'topik',
         'tanggal',
         'waktu_mulai',
         'waktu_selesai',
+        'durasi_menit',       // ← dari versi 2
         'nilai_minimum',
         'batas_pengulangan',
         'status',
@@ -24,6 +26,7 @@ class KuisModel extends Model
         'end_at',
         'created_at',
         'updated_at',
+        'published_at',       // ← dari versi 2
     ];
 
     protected $useTimestamps = true;

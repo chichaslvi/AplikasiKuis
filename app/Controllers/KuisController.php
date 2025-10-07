@@ -4,18 +4,144 @@ namespace App\Controllers;
 
 use App\Controllers\BaseController;
 use App\Models\KuisModel;
+use App\Models\KuisHasilModel;
 use App\Models\SoalModel;
 use App\Models\KategoriAgentModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+/**
+ * Gabungan dari dua versi KuisController milikmu, tanpa memotong kode asli.
+ * - Menyatukan semua method dari filemu
+ * - Menambahkan endpoint /quiz/* (status, start, attempt, submit, abandon, result) ke controller yang sama
+ */
 class KuisController extends BaseController
 {
     public function __construct()
     {
         // Paksa semua date() & strtotime() di controller ini pakai WIB
         date_default_timezone_set('Asia/Jakarta');
+    }
+
+    /**
+     * Mulai kuis (membuat attempt baru) dengan batas sesuai "batas_pengulangan".
+     * - Cek kuis ada
+     * - Cek window waktu (opsional: start_at/end_at)
+     * - Hitung attempt user
+     * - Jika belum habis -> insert kuis_hasil (status in_progress)
+     */
+    public function mulai(int $idKuis)
+    {
+        $session = session();
+
+        // Pastikan user login & punya id_user di session
+        $userId = (int) $session->get('id_user');
+        if (!$userId) {
+            return redirect()->back()->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        $kuisModel  = new KuisModel();
+        $hasilModel = new KuisHasilModel();
+        $db         = \Config\Database::connect();
+
+        // 1) Ambil data kuis
+        $kuis = $kuisModel->find($idKuis);
+        if (!$kuis) {
+            return redirect()->back()->with('error', 'Kuis tidak ditemukan.');
+        }
+
+        // (Opsional) Validasi window waktu kuis jika kamu memakainya
+        // start_at / end_at boleh null (berarti tanpa batas)
+        $now = date('Y-m-d H:i:s');
+        if (!empty($kuis['start_at']) && $now < $kuis['start_at']) {
+            return redirect()->back()->with('error', 'Kuis belum dimulai.');
+        }
+        if (!empty($kuis['end_at']) && $now >= $kuis['end_at']) {
+            return redirect()->back()->with('error', 'Kuis sudah berakhir.');
+        }
+        if (isset($kuis['status']) && strtolower($kuis['status']) !== 'active') {
+            return redirect()->back()->with('error', 'Kuis tidak aktif.');
+        }
+
+        // 2) Hitung attempt user
+        $attemptUsed = $hasilModel->countUserAttempts($userId, $idKuis);
+        $maxAttempts = (int) ($kuis['batas_pengulangan'] ?? 1);
+
+        if ($attemptUsed >= $maxAttempts) {
+            return redirect()->back()->with('error', 'Batas pengerjaan kuis sudah tercapai.');
+        }
+
+        // 3) Insert attempt baru di dalam transaksi (mencegah race condition double-click)
+        try {
+            $db->transStart();
+
+            // Recount dalam transaksi untuk keamanan ekstra
+            $attemptUsedTx = $hasilModel->where('id_user', $userId)
+                                        ->where('id_kuis', $idKuis)
+                                        ->countAllResults();
+
+            if ($attemptUsedTx >= $maxAttempts) {
+                $db->transComplete();
+                return redirect()->back()->with('error', 'Batas pengerjaan kuis sudah tercapai.');
+            }
+
+            $hasilModel->insert([
+                'id_user'           => $userId,
+                'id_kuis'           => $idKuis,
+                'status'            => 'in_progress',
+                'started_at'        => $now,
+                'tanggal_pengerjaan'=> date('Y-m-d'),
+                'jumlah_pengerjaan' => $attemptUsedTx + 1,
+            ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->back()->with('error', 'Gagal memulai kuis. Coba lagi.');
+            }
+
+        } catch (\Throwable $e) {
+            if ($db->transStatus() === true) {
+                $db->transRollback();
+            }
+            return redirect()->back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
+
+        // 4) Arahkan ke halaman soal kuis (ubah path sesuai aplikasi kamu)
+        return redirect()->to(base_url("kuis/soal/{$idKuis}"));
+    }
+
+    /**
+     * (Opsional) Endpoint sederhana untuk mendapatkan sisa kuota attempt user
+     * Bisa dipakai di dashboard agent untuk men-disable tombol.
+     */
+    public function quota(int $idKuis)
+    {
+        $session  = session();
+        $userId   = (int) $session->get('id_user');
+
+        if (!$userId) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $kuisModel  = new KuisModel();
+        $hasilModel = new KuisHasilModel();
+
+        $kuis = $kuisModel->find($idKuis);
+        if (!$kuis) {
+            return $this->response->setJSON(['error' => 'Kuis tidak ditemukan'])->setStatusCode(404);
+        }
+
+        $used = $hasilModel->countUserAttempts($userId, $idKuis);
+        $max  = (int) ($kuis['batas_pengulangan'] ?? 1);
+
+        return $this->response->setJSON([
+            'quiz_id'            => $idKuis,
+            'max_attempts'       => $max,
+            'used_attempts'      => $used,
+            'remaining_attempts' => max(0, $max - $used),
+        ]);
     }
 
     /**
@@ -100,7 +226,6 @@ class KuisController extends BaseController
 
         return view('admin/kuis/index', $data);
     }
-    
 
     public function create()
     {
@@ -251,7 +376,7 @@ class KuisController extends BaseController
         ];
 
         $fileExcel = $this->request->getFile('file_excel');
-        if ($fileExcel && $fileExcel->isValid()) {
+      if ($fileExcel && $fileExcel->isValid()) {
             $newName = $fileExcel->getRandomName();
             $fileExcel->move(WRITEPATH . 'uploads', $newName);
             $data['file_excel'] = $newName;
@@ -396,13 +521,7 @@ class KuisController extends BaseController
         $kuisModel = new KuisModel();
 
         // kalau tidak ada kategori → jangan tampilkan apa pun
-        if (!$idKategori) {
-            $data['kuis'] = [];
-            return view('agent/dashboard', $data);
-        }
-
-        // ✅ tampilkan hanya kuis untuk kategori ini, berstatus active, dan dalam window waktu
-        $data['kuis'] = $kuisModel->getKuisByKategoriForNow($idKategori);
+        $data['kuis'] = $idKategori ? $kuisModel->getKuisByKategoriForNow($idKategori) : [];
 
         return view('agent/dashboard', $data);
     }
@@ -496,6 +615,285 @@ class KuisController extends BaseController
         return view('agent/soal', [
             'kuis'     => $kuis,
             'soalList' => $soalList
+        ]);
+    }
+
+    // ====== [BARU] POST /quiz/{id}/start ======
+    public function start($idKuis)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+
+        if (!$userId) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Silakan login terlebih dahulu.'])->setStatusCode(401);
+        }
+
+        $db         = \Config\Database::connect();
+        $kuisModel  = new \App\Models\KuisModel();
+        $hasilModel = new \App\Models\KuisHasilModel();
+
+        // 1) Ambil data kuis
+        $kuis = $kuisModel->find($idKuis);
+        if (!$kuis) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis tidak ditemukan'])->setStatusCode(404);
+        }
+
+        // (opsional) validasi kategori agent
+        $idKategori = $this->getLoggedInKategoriId();
+        if ($idKategori) {
+            $allowed = $db->table('kuis_kategori')
+                          ->where('id_kuis', $idKuis)
+                          ->where('id_kategori', $idKategori)
+                          ->countAllResults();
+            if ($allowed === 0) {
+                return $this->response->setJSON(['ok'=>false,'error'=>'Kuis tidak tersedia untuk kategori Anda'])->setStatusCode(403);
+            }
+        }
+
+        // 2) Validasi status & window waktu
+        $now = date('Y-m-d H:i:s');
+        if (strtolower((string)$kuis['status']) !== 'active') {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis tidak aktif'])->setStatusCode(400);
+        }
+        if (!empty($kuis['start_at']) && $now < $kuis['start_at']) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis belum dimulai'])->setStatusCode(400);
+        }
+        if (!empty($kuis['end_at']) && $now >= $kuis['end_at']) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis sudah berakhir'])->setStatusCode(400);
+        }
+
+        // 3) Cek nilai 100 (jika kebijakanmu: stop kalau sudah 100)
+        $nilaiMax = $hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $idKuis)
+            ->selectMax('nilai')
+            ->get()
+            ->getRowArray();
+        if (!empty($nilaiMax) && (int)$nilaiMax['nilai'] === 100) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Nilai sudah 100. Kuis dianggap selesai.'])->setStatusCode(403);
+        }
+
+        // 4) Hitung attempt used vs batas
+        $attemptUsed = $hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $idKuis)
+            ->countAllResults();
+        $maxAttempts = (int)($kuis['batas_pengulangan'] ?? 1);
+        if ($attemptUsed >= $maxAttempts) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Batas percobaan sudah habis'])->setStatusCode(403);
+        }
+
+        // 5) Buat attempt baru
+        try {
+            $db->transStart();
+
+            $hasilModel->insert([
+                'id_user'           => $userId,
+                'id_kuis'           => $idKuis,
+                'status'            => 'in_progress',
+                'started_at'        => $now,
+                'tanggal_pengerjaan'=> date('Y-m-d'),
+                'jumlah_pengerjaan' => $attemptUsed + 1,
+            ]);
+            $idHasil = $hasilModel->getInsertID();
+
+            $db->transComplete();
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            // Sukses → balikan JSON + URL tujuan attempt
+            return $this->response->setJSON([
+                'ok'         => true,
+                'message'    => 'Attempt baru dibuat',
+                'attempt_id' => $idHasil,
+                'redirect'   => base_url("quiz/attempt/{$idHasil}")
+            ]);
+
+        } catch (\Throwable $e) {
+            if ($db->transStatus() === true) {
+                $db->transRollback();
+            }
+            return $this->response->setJSON([
+                'ok'    => false,
+                'error' => 'Gagal memulai kuis: '.$e->getMessage(),
+            ])->setStatusCode(500);
+        }
+    }
+
+    // ====== [HELPER BARU] Ambil attempt milik user saat ini atau 404 ======
+    private function getAttemptOrFail(int $idHasil, int $userId): array
+    {
+        $db = \Config\Database::connect();
+
+        $attempt = $db->table('kuis_hasil')->where('id', $idHasil)->get()->getRowArray();
+        if (!$attempt) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Attempt tidak ditemukan.');
+        }
+        if ((int)$attempt['id_user'] !== $userId) {
+            // ganti jadi 404 agar aman di semua versi CI4
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Attempt tidak ditemukan.');
+        }
+
+        $kuis = $db->table('kuis')->where('id_kuis', $attempt['id_kuis'])->get()->getRowArray();
+        if (!$kuis) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Kuis tidak ditemukan.');
+        }
+
+        return [$attempt, $kuis];
+    }
+
+    // ====== [HELPER BARU] Hitung nilai dari jawaban kiriman vs kunci ======
+    private function hitungNilai(int $idKuis, array $jawabanInput): array
+    {
+        $soalModel = new SoalModel();
+        $soalList  = $soalModel->where('id_kuis', $idKuis)->findAll();
+
+        $total = count($soalList);
+        $benar = 0;
+
+        foreach ($soalList as $s) {
+            $sid     = (int)$s['id_soal'];
+            $kunci   = strtolower(trim((string)$s['jawaban']));
+            $jawaban = strtolower(trim((string)($jawabanInput[$sid] ?? '')));
+            if ($kunci !== '' && $jawaban !== '' && $jawaban === $kunci) {
+                $benar++;
+            }
+        }
+
+        $nilai = $total > 0 ? (int) round(($benar / $total) * 100) : 0;
+
+        return [$nilai, $total, $benar];
+    }
+
+    // ============= GET /quiz/attempt/{id} =============
+    public function attempt($idHasil)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+        if (!$userId) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        [$attempt, $kuis] = $this->getAttemptOrFail((int)$idHasil, $userId);
+
+        // Validasi window waktu saat menampilkan soal
+        $now = date('Y-m-d H:i:s');
+        if (!empty($kuis['end_at']) && $now >= $kuis['end_at']) {
+            // Kalau waktu habis tapi status masih in_progress, arahkan ke result
+            if (($attempt['status'] ?? '') === 'in_progress') {
+                return redirect()->to(base_url("quiz/attempt/{$idHasil}/result"))
+                                ->with('warning', 'Waktu kuis telah berakhir.');
+            }
+        }
+
+        // Ambil soal
+        $soalModel = new SoalModel();
+        $soalList  = $soalModel->where('id_kuis', $attempt['id_kuis'])->findAll();
+
+        // Pakai view yang sama dengan kerjakan/soal (supaya tidak ubah blade)
+        return view('agent/soal', [
+            'kuis'      => $kuis,
+            'soalList'  => $soalList,
+            'attemptId' => (int)$idHasil, // biar form bisa POST ke /quiz/attempt/{id}/submit
+        ]);
+    }
+
+    // ============= POST /quiz/attempt/{id}/submit =============
+    public function submit($idHasil)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+        if (!$userId) {
+            return $this->response->setJSON(['ok'=>false,'error'=>'Unauthorized'])->setStatusCode(401);
+        }
+
+        $db = \Config\Database::connect();
+        [$attempt, $kuis] = $this->getAttemptOrFail((int)$idHasil, $userId);
+
+        if (in_array($attempt['status'], ['completed','abandoned'], true)) {
+            return $this->response->setJSON([
+                'ok'      => true,
+                'message' => 'Attempt sudah berakhir.',
+                'redirect'=> base_url("quiz/attempt/{$idHasil}/result")
+            ]);
+        }
+
+        // Ambil jawaban dari form: name="jawaban[ID_SOAL]"
+        $jawabanInput = (array) ($this->request->getPost('jawaban') ?? []);
+
+        // Hitung nilai
+        [$nilai, $total, $benar] = $this->hitungNilai((int)$attempt['id_kuis'], $jawabanInput);
+
+        // Simpan hasil
+        $db->table('kuis_hasil')->where('id', (int)$idHasil)->update([
+            'status'      => 'completed',
+            'finished_at' => date('Y-m-d H:i:s'),
+            'nilai'       => $nilai,
+        ]);
+
+        return $this->response->setJSON([
+            'ok'        => true,
+            'message'   => 'Jawaban tersimpan.',
+            'score'     => $nilai,
+            'benar'     => $benar,
+            'total'     => $total,
+            'redirect'  => base_url("quiz/attempt/{$idHasil}/result")
+        ]);
+    }
+
+    // ============= POST /quiz/attempt/{id}/abandon =============
+    public function abandon($idHasil)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+        if (!$userId) {
+            return $this->response->setJSON(['ok'=>false,'error'=>'Unauthorized'])->setStatusCode(401);
+        }
+
+        $db = \Config\Database::connect();
+        [$attempt, $kuis] = $this->getAttemptOrFail((int)$idHasil, $userId);
+
+        if (($attempt['status'] ?? '') === 'in_progress') {
+            $db->table('kuis_hasil')->where('id', (int)$idHasil)->update([
+                'status'      => 'abandoned',
+                'finished_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'ok'      => true,
+            'message' => 'Attempt ditandai sebagai ditinggalkan.',
+            'redirect'=> base_url('agent/kuis') // balik ke daftar kuis
+        ]);
+    }
+
+    // ============= GET /quiz/attempt/{id}/result =============
+    public function result($idHasil)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+        if (!$userId) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        [$attempt, $kuis] = $this->getAttemptOrFail((int)$idHasil, $userId);
+
+        if (($attempt['status'] ?? '') === 'in_progress') {
+            // Belum submit, arahkan balik ke halaman attempt
+            return redirect()->to(base_url("quiz/attempt/{$idHasil}"))
+                             ->with('warning', 'Selesaikan kuis terlebih dahulu.');
+        }
+
+        // Sederhana: tampilkan JSON ringkas; kalau mau pakai view khusus, tinggal ganti di sini
+        return $this->response->setJSON([
+            'ok'           => true,
+            'attempt_id'   => (int)$idHasil,
+            'quiz'         => ['id'=>(int)$kuis['id_kuis'], 'nama'=>$kuis['nama_kuis'] ?? ''],
+            'status'       => $attempt['status'],
+            'nilai'        => (int)($attempt['nilai'] ?? 0),
+            'started_at'   => $attempt['started_at'] ?? null,
+            'finished_at'  => $attempt['finished_at'] ?? null,
         ]);
     }
 }
