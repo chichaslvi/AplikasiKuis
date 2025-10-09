@@ -126,8 +126,9 @@ $routes->group('reviewer', [
     $routes->get('dashboard', '\App\Controllers\Dashboard::reviewer');
     // Reviewer
     
-    $routes->get('password', 'Password::index');
-    $routes->post('ganti_password/update', '\App\Controllers\Reviewer\Password::index');
+   // Route untuk halaman ganti password reviewer
+$routes->get('password', '\App\Controllers\Reviewer\Password::index');
+$routes->post('ganti_password/update', '\App\Controllers\Reviewer\Password::update');
 
     // Report
     $routes->get('reports', 'ReportController::index');        
@@ -166,7 +167,8 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     // Riwayat & Ulangi
     $routes->get('riwayat', 'Agent::riwayat');
 
-    $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
+    $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1');
+    $routes->post('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
 });
 
 // ==================
@@ -174,8 +176,6 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
 // ==================
 $routes->get('dashboard', 'Agent::dashboard'); // alias /dashboard
 $routes->get('soal', 'Agent::soal');           // alias /soal
-$routes->get('ulangi-quiz', 'Agent::ulangiQuiz'); // alias /ulangi-quiz
-$routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); // <-- DITAMBAHKAN: /ulangi-quiz/{id}
 $routes->get('riwayat', 'Agent::riwayat');
 $routes->get('agent/hasil/(:num)', 'Agent::hasil/$1');
 $routes->get('agent/hasil/detail/(:num)', 'Agent::detailKuis/$1');

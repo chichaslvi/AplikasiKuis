@@ -664,4 +664,52 @@ public function submitKuis()
 
         return view('agent/hasil', $data);
     }
+    
+     public function ulangiQuiz($id_kuis = null)
+    {
+        if ($resp = $this->ensureAgent()) {
+            return $resp;
+        }
+
+        $id_kuis = $id_kuis ?? $this->request->getGet('id');
+        $id_kuis = (int) $id_kuis;
+
+        if ($id_kuis <= 0) {
+            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
+        }
+
+        $katId = (int) session('kategori_agent_id');
+
+        $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
+        if (!$kuis) {
+            throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
+        }
+
+        $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
+                 : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
+        $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
+                 : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_selesai'] ?? '')) ?: null);
+
+        $now = date('Y-m-d H:i:s');
+        $within = ($startAt && $endAt)
+            ? (strtotime($now) >= strtotime($startAt) && strtotime($now) < strtotime($endAt))
+            : false;
+
+        if (!$within) {
+            return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
+        }
+
+        $this->startAttempt($kuis, (int)session()->get('user_id'));
+
+        $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
+
+        $data = [
+            'user'      => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
+            'kuis'      => $kuis,
+            'soalList'  => $soalList,
+        ];
+
+        return view('agent/soal', $data);
+    }
+
 }

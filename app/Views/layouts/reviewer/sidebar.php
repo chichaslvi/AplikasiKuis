@@ -29,7 +29,7 @@
   </a>
 </li>
     <li>
-      <a href="<?= base_url('/auth/logout') ?>">
+      <a href="<?= base_url('/') ?>">
         <i class="fa-solid fa-right-from-bracket"></i> Logout
       </a>
     </li>
