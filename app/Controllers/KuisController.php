@@ -196,6 +196,9 @@ class KuisController extends BaseController
         $this->autoDeactivate();
 
         $kuisModel = new KuisModel();
+        $kuisModel->autoActivateDueDrafts();   // <-- DITAMBAHKAN
+
+        // 🔁 Ganti ke model agar status sinkron & tidak dioverride
         $data['kuis'] = $kuisModel->getAllKuisWithKategori();
 
         return view('admin/kuis/index', $data);
