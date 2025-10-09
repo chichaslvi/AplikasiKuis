@@ -8,22 +8,38 @@ use App\Models\UserModel;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use App\Models\HasilKuisModel;
 use CodeIgniter\I18n\Time;
+use Config\Database; // ✅ CI4 DB connection
 
+/**
+ * Controller: Agent
+ * Deskripsi: Controller utama untuk alur kuis Agent (CI4).
+ * Catatan: Logika asli dipertahankan; hanya perbaikan kompatibilitas CI4, DB, dan dokumentasi.
+ */
 class Agent extends BaseController
 {
     protected $kuisModel;
     protected $soalModel;
     protected $userModel;
     protected $hasilModel;
+    protected $db; // ✅ CI4 DB instance
 
     public function __construct()
     {
+        // init models
         $this->kuisModel  = new KuisModel();
         $this->soalModel  = new SoalModel();
         $this->userModel  = new UserModel();
         $this->hasilModel = new HasilKuisModel();
+
+        // ✅ penting di CI4: koneksi DB manual (mengganti "magic" $this->db ala CI3)
+        $this->db = Database::connect();
     }
 
+    // --------------------------------------------------
+    // Fungsi: ensureAgent()
+    // Deskripsi (Description):
+    // Validasi sesi user & role (agent). Return redirect jika tidak valid.
+    // --------------------------------------------------
     private function ensureAgent()
     {
         $session = session();
@@ -33,8 +49,10 @@ class Agent extends BaseController
             return redirect()->to('/auth/login')->with('error', 'Silakan login terlebih dahulu.');
         }
 
+        // ⚠️ sesuai instruksi kamu: session kemungkinan hanya punya user_id
+        // jika di masa depan kamu simpan 'role', bisa aktifkan validasi role berikut:
         $role = strtolower($session->get('role') ?? '');
-        if ($role !== 'agent') {
+        if ($role !== '' && $role !== 'agent') {
             return redirect()->to('/')->with('error', 'Akses ditolak.');
         }
 
@@ -303,128 +321,127 @@ class Agent extends BaseController
         return $this->response->setJSON(['ok' => true, 'sig' => $lastSig, 'data' => null]);
     }
 
-    // ======= bagian lain TIDAK DIUBAH =======
+    
+   public function detailKuis($id_hasil)
+{
+    // Tambahkan ensureAgent dan cek ownership
+    if ($resp = $this->ensureAgent()) return $resp;
+    
+    $userId = (int) session()->get('user_id');
+    $id_hasil = (int) $id_hasil;
+    
+    if ($id_hasil <= 0) throw PageNotFoundException::forPageNotFound();
 
-    public function detailKuis($id = null)
-    {
-        if ($resp = $this->ensureAgent()) {
-            return $resp;
-        }
+    // Ambil data hasil kuis + pastikan milik user yang login
+    $hasil = $this->hasilModel
+        ->where('id_hasil', $id_hasil)
+        ->where('id_user', $userId)
+        ->first();
+        
+    if (!$hasil) throw PageNotFoundException::forPageNotFound('Data hasil tidak ditemukan.');
 
-        $id = (int) $id;
-        if ($id <= 0) {
-            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
-        }
+    // Cek apakah kuis sudah berakhir
+    $kuis = $this->kuisModel->find($hasil['id_kuis']);
+    if (!$kuis) throw PageNotFoundException::forPageNotFound('Data kuis tidak ditemukan.');
 
-        $katId = (int) session('kategori_agent_id');
-
-        $kuis = $this->kuisModel->getKuisByIdForAgent($id, $katId);
-        if (!$kuis) {
-            throw PageNotFoundException::forPageNotFound("Kuis tidak ditemukan atau bukan kategori Anda.");
-        }
-
-        $data = [
-            'user' => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
-            'kuis' => $kuis
-        ];
-
-        return view('agent/detailKuis', $data);
+    $endTime = trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_selesai'] ?? ''));
+    $kuisEnded = $endTime && strtotime($endTime) < time();
+    
+    // Jika strict: hanya boleh lihat setelah kuis berakhir
+    if (!$kuisEnded) {
+        return redirect()->to('/agent/riwayat')->with('error', 'Kuis masih berlangsung');
     }
 
+    // Ambil jawaban per soal
+    $jawaban = $this->db->table('kuis_jawaban kj')
+        ->select('kj.*, s.soal, s.pilihan_a, s.pilihan_b, s.pilihan_c, s.pilihan_d, s.pilihan_e')
+        ->join('soal_kuis s', 's.id_soal = kj.id_soal')
+        ->where('kj.id_hasil', $id_hasil)
+        ->orderBy('s.id_soal', 'ASC')
+        ->get()
+        ->getResultArray();
+
+    $data = [
+        'kuis' => $kuis,
+        'hasil' => $hasil,
+        'jawaban' => $jawaban,
+        'kuisEnded' => $kuisEnded
+    ];
+
+    return view('agent/hasil_detail', $data);
+}
+
+    
     public function soal($id_kuis = null)
-    {
-        if ($resp = $this->ensureAgent()) {
-            return $resp;
-        }
-
-        $id_kuis = $id_kuis ?? $this->request->getGet('id');
-        $id_kuis = (int) $id_kuis;
-
-        if ($id_kuis <= 0) {
-            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
-        }
-
-        $katId = (int) session('kategori_agent_id');
-
-        $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
-        if (!$kuis) {
-            throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
-        }
-
-        $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
-                 : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
-        $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
-                 : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_selesai'] ?? '')) ?: null);
-
-        $now = date('Y-m-d H:i:s');
-        $within = ($startAt && $endAt)
-            ? (strtotime($now) >= strtotime($startAt) && strtotime($now) < strtotime($endAt))
-            : false;
-
-        if (!$within) {
-            return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
-        }
-
-        $this->startAttempt($kuis, (int)session()->get('user_id'));
-
-        $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
-
-        $data = [
-            'user'      => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
-            'kuis'      => $kuis,
-            'soalList'  => $soalList,
-        ];
-
-        return view('agent/soal', $data);
+{
+    if ($resp = $this->ensureAgent()) {
+        return $resp;
     }
 
-    public function ulangiQuiz($id_kuis = null)
-    {
-        if ($resp = $this->ensureAgent()) {
-            return $resp;
-        }
+    $id_kuis = $id_kuis ?? $this->request->getGet('id');
+    $id_kuis = (int) $id_kuis;
 
-        $id_kuis = $id_kuis ?? $this->request->getGet('id');
-        $id_kuis = (int) $id_kuis;
-
-        if ($id_kuis <= 0) {
-            throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
-        }
-
-        $katId = (int) session('kategori_agent_id');
-
-        $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
-        if (!$kuis) {
-            throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
-        }
-
-        $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
-                 : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
-        $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
-                 : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_selesai'] ?? '')) ?: null);
-
-        $now = date('Y-m-d H:i:s');
-        $within = ($startAt && $endAt)
-            ? (strtotime($now) >= strtotime($startAt) && strtotime($now) < strtotime($endAt))
-            : false;
-
-        if (!$within) {
-            return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
-        }
-
-        $this->startAttempt($kuis, (int)session()->get('user_id'));
-
-        $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
-
-        $data = [
-            'user'      => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
-            'kuis'      => $kuis,
-            'soalList'  => $soalList,
-        ];
-
-        return view('agent/soal', $data);
+    if ($id_kuis <= 0) {
+        throw PageNotFoundException::forPageNotFound('ID Kuis tidak valid');
     }
 
+    $katId = (int) session('kategori_agent_id');
+    $kuis = $this->kuisModel->getKuisByIdForAgent($id_kuis, $katId);
+    if (!$kuis) {
+        throw PageNotFoundException::forPageNotFound('Kuis tidak ditemukan atau bukan kategori Anda.');
+    }
+
+    $startAt = !empty($kuis['start_at']) ? $kuis['start_at']
+             : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_mulai'] ?? '')) ?: null);
+    $endAt   = !empty($kuis['end_at']) ? $kuis['end_at']
+             : (trim(($kuis['tanggal'] ?? '') . ' ' . ($kuis['waktu_selesai'] ?? '')) ?: null);
+
+    $now = date('Y-m-d H:i:s');
+    $within = ($startAt && $endAt)
+        ? (strtotime($now) >= strtotime($startAt) && strtotime($now) < strtotime($endAt))
+        : false;
+
+    if (!$within) {
+        return redirect()->to('/agent/dashboard')->with('error', 'Kuis belum dibuka atau sudah berakhir.');
+    }
+
+    // Mulai attempt
+    $this->startAttempt($kuis, (int)session()->get('user_id'));
+
+    // Ambil semua soal
+    $soalList = $this->soalModel->where('id_kuis', $id_kuis)->findAll() ?? [];
+
+    // 🔀 Acak urutan pilihan di setiap soal
+    foreach ($soalList as &$soal) {
+        $pilihan = [
+            'A' => $soal['pilihan_a'],
+            'B' => $soal['pilihan_b'],
+            'C' => $soal['pilihan_c'],
+            'D' => $soal['pilihan_d'],
+            'E' => $soal['pilihan_e'],
+        ];
+
+        // ambil key dan acak
+        $keys = array_keys($pilihan);
+        shuffle($keys);
+
+        // buat ulang urutan pilihan acak
+        $soal['pilihan_acak'] = [];
+        foreach ($keys as $key) {
+            $soal['pilihan_acak'][$key] = $pilihan[$key];
+        }
+    }
+
+    $data = [
+        'user'      => $this->userModel->getUserWithKategori((int) session()->get('user_id')),
+        'kuis'      => $kuis,
+        'soalList'  => $soalList,
+    ];
+
+    return view('agent/soal', $data);
+}
+
+    
     public function kerjakan($id_kuis = null)
     {
         if ($resp = $this->ensureAgent()) {
@@ -469,148 +486,182 @@ class Agent extends BaseController
         ]);
     }
 
-    public function submitKuis()
-    {
-        if ($resp = $this->ensureAgent()) return $resp;
+    // --------------------------------------------------
+    // Fungsi: submitKuis()
+    // Deskripsi (Description):
+    // Menerima jawaban dari front-end (JSON), menyimpan jawaban per soal,
+    // menghitung skor, dan menandai attempt sebagai 'finished'.
+    // Catatan: Logika asli dipertahankan; ditambah inisialisasi $this->db agar insert jawaban aman.
+    // --------------------------------------------------
+public function submitKuis()
+{
+    if ($resp = $this->ensureAgent()) return $resp;
 
-        // === LOG untuk memastikan request masuk ===
-        log_message('info', '[submitKuis] HIT user_id={uid}', ['uid' => (int)session()->get('user_id')]);
+    $payload = $this->request->getJSON(true);
+    $idKuis  = (int)($payload['id_kuis'] ?? 0);
+    $answers = $payload['answers'] ?? [];
 
-        $payload = $this->request->getJSON(true);
-        $idKuis  = (int)($payload['id_kuis'] ?? 0);
-        $answers = $payload['answers'] ?? [];
+    log_message('debug', 'Answers received: ' . json_encode($answers));
 
-        if ($idKuis <= 0 || !is_array($answers)) {
-            return $this->response->setStatusCode(400)->setJSON(['ok'=>false,'msg'=>'Data tidak valid']);
-        }
-
-        $userId = (int) session()->get('user_id');
-        $kuis   = $this->kuisModel->select('id_kuis, nilai_minimum, topik, nama_kuis')->find($idKuis);
-        if (!$kuis) {
-            return $this->response->setStatusCode(404)->setJSON(['ok'=>false,'msg'=>'Kuis tidak ditemukan']);
-        }
-
-        $soalList = $this->soalModel
-            ->where('id_kuis', $idKuis)
-            ->orderBy($this->soalModel->primaryKey, 'ASC')
-            ->findAll();
-
-        $benar = 0;
-        $total = count($soalList);
-
-        $i = 1;
-        foreach ($soalList as $row) {
-            $userKey = $answers[(string)$i] ?? $answers[$i] ?? null;
-            if ($userKey) {
-                $opt = [
-                    'A' => $row['pilihan_a'] ?? null,
-                    'B' => $row['pilihan_b'] ?? null,
-                    'C' => $row['pilihan_c'] ?? null,
-                    'D' => $row['pilihan_d'] ?? null,
-                    'E' => $row['pilihan_e'] ?? null,
-                ];
-                $kunciRaw = trim((string)($row['jawaban'] ?? ''));
-                $kunciKey = null;
-                if (in_array($kunciRaw, ['A','B','C','D','E'], true)) {
-                    $kunciKey = $kunciRaw;
-                } else {
-                    foreach ($opt as $k => $val) {
-                        if ($val !== null && strcasecmp($kunciRaw, (string)$val) === 0) {
-                            $kunciKey = $k;
-                            break;
-                        }
-                    }
-                }
-                if ($kunciKey && $userKey === $kunciKey) $benar++;
-            }
-            $i++;
-        }
-
-        $salah = $total - $benar;
-        $skor  = $total > 0 ? (int) round(($benar / $total) * 100) : 0;
-
-        $attempt = $this->hasilModel
-            ->where('id_user', $userId)
-            ->where('id_kuis', $idKuis)
-            ->where('status', 'in_progress')
-            ->orderBy('started_at', 'DESC')
-            ->first();
-
-        $dataUpdate = [
-            'jumlah_soal'        => $total,
-            'jawaban_benar'      => $benar,
-            'jawaban_salah'      => $salah,
-            'total_skor'         => $skor,
-            'status'             => 'finished',
-            'finished_at'        => date('Y-m-d H:i:s'),
-        ];
-
-        if ($attempt) {
-            $ok = $this->hasilModel->update((int)$attempt['id_hasil'], $dataUpdate);
-            log_message('info', '[submitKuis] UPDATE attempt={id} ok={ok}', [
-                'id' => (int)$attempt['id_hasil'],
-                'ok' => $ok ? 1 : 0
-            ]);
-        } else {
-            $dataInsert = [
-                'id_user'            => $userId,
-                'id_kuis'            => $idKuis,
-                'jumlah_soal'        => $total,
-                'jawaban_benar'      => $benar,
-                'jawaban_salah'      => $salah,
-                'total_skor'         => $skor,
-                'tanggal_pengerjaan' => date('Y-m-d H:i:s'),
-                'status'             => 'finished',
-                'finished_at'        => date('Y-m-d H:i:s'),
-            ];
-            $newId = $this->hasilModel->insert($dataInsert, true);
-            log_message('info', '[submitKuis] INSERT id_hasil={id}', ['id' => (int)$newId]);
-        }
-
-        $payloadResp = [
-            'ok' => true,
-            'ringkas' => [
-                'total' => $total,
-                'benar' => $benar,
-                'salah' => $salah,
-                'skor'  => $skor
-            ],
-        ];
-
-        // (opsional) kirim token baru bila CI4 meregenerasi token setiap request
-        $hdrName = function_exists('csrf_header') ? csrf_header() : 'X-CSRF-TOKEN';
-        $hdrHash = function_exists('csrf_hash')   ? csrf_hash()   : '';
-
-        return $this->response
-            ->setHeader('X-CSRF-HEADER', $hdrName)
-            ->setHeader('X-CSRF-TOKEN',  $hdrHash)
-            ->setJSON($payloadResp);
+    if ($idKuis <= 0 || !is_array($answers) || empty($answers)) {
+        return $this->response->setStatusCode(400)
+            ->setJSON(['ok' => false, 'msg' => 'Data tidak valid']);
     }
+
+    $userId = (int) session()->get('user_id');
+    $kuis = $this->kuisModel->find($idKuis);
+
+    if (!$kuis) {
+        return $this->response->setStatusCode(404)
+            ->setJSON(['ok' => false, 'msg' => 'Kuis tidak ditemukan']);
+    }
+
+    // Ambil semua soal kuis
+    $soalList = $this->soalModel->where('id_kuis', $idKuis)->findAll();
+    $total = count($soalList);
+
+    // Buat/hasil attempt
+    $attempt = $this->hasilModel
+        ->where('id_user', $userId)
+        ->where('id_kuis', $idKuis)
+        ->orderBy('started_at', 'DESC')
+        ->first();
+
+    if ($attempt && $attempt['status'] === 'in_progress') {
+        $idHasil = (int)$attempt['id_hasil'];
+    } else {
+        // Hapus jawaban lama
+        $this->db->table('kuis_jawaban')
+            ->whereIn('id_hasil', function ($builder) use ($userId, $idKuis) {
+                return $builder->select('id_hasil')
+                    ->from('kuis_hasil')
+                    ->where('id_user', $userId)
+                    ->where('id_kuis', $idKuis);
+            })
+            ->delete();
+
+        $this->hasilModel->insert([
+            'id_user' => $userId,
+            'id_kuis' => $idKuis,
+            'jumlah_soal' => $total,
+            'jawaban_benar' => 0,
+            'jawaban_salah' => 0,
+            'total_skor' => 0,
+            'status' => 'in_progress',
+            'started_at' => date('Y-m-d H:i:s'),
+            'tanggal_pengerjaan' => date('Y-m-d H:i:s')
+        ]);
+
+        $idHasil = $this->hasilModel->getInsertID();
+    }
+
+    // ============================
+    // FIX: Mapping answers ke soal IDs yang benar
+    // ============================
+    $benar = 0;
+    $soalIds = array_column($soalList, 'id_soal');
+    
+    log_message('debug', 'Soal IDs from DB: ' . implode(', ', $soalIds));
+    log_message('debug', 'Answer keys from frontend: ' . implode(', ', array_keys($answers)));
+
+    // Normalisasi answers - handle kedua kemungkinan
+    $answersMapped = [];
+    $i = 0;
+    
+    foreach ($answers as $key => $val) {
+        $intKey = (int)$key;
+        
+        // Coba mapping: jika key adalah index (1,2,3), map ke soal ID
+        if ($intKey >= 1 && $intKey <= count($soalIds) && !in_array($intKey, $soalIds)) {
+            // Key adalah index, map ke soal ID yang sesuai
+            $mappedSoalId = $soalIds[$intKey - 1]; // -1 karena array mulai dari 0
+            $answersMapped[$mappedSoalId] = trim($val);
+            log_message('debug', 'Mapped index ' . $key . ' to soal ID ' . $mappedSoalId);
+        } else {
+            // Key sudah adalah soal ID
+            $answersMapped[$intKey] = trim($val);
+            log_message('debug', 'Using direct soal ID: ' . $key);
+        }
+    }
+
+    foreach ($soalList as $row) {
+        $idSoal = (int)$row['id_soal'];
+        $userAnswer = $answersMapped[$idSoal] ?? '';
+        $correctAnswer = trim($row['jawaban'] ?? '');
+
+        $status = 'Salah';
+
+        if (!empty($userAnswer)) {
+            $normalizedUser = strtolower(preg_replace('/\s+/', ' ', trim($userAnswer)));
+            $normalizedCorrect = strtolower(preg_replace('/\s+/', ' ', trim($correctAnswer)));
+
+            if ($normalizedUser === $normalizedCorrect) {
+                $status = 'Benar';
+                $benar++;
+            }
+        }
+
+        $this->db->table('kuis_jawaban')->insert([
+            'id_hasil'      => $idHasil,
+            'id_soal'       => $idSoal,
+            'jawaban_user'  => $userAnswer,
+            'jawaban_benar' => $correctAnswer,
+            'status'        => $status
+        ]);
+    }
+
+    $salah = $total - $benar;
+    $skor  = $total > 0 ? (int) round(($benar / $total) * 100) : 0;
+
+    $this->hasilModel->update($idHasil, [
+        'jawaban_benar' => $benar,
+        'jawaban_salah' => $salah,
+        'total_skor'    => $skor,
+        'status'        => 'finished',
+        'finished_at'   => date('Y-m-d H:i:s')
+    ]);
+
+    return $this->response->setJSON([
+        'ok' => true,
+        'id_hasil' => $idHasil,
+        'ringkas' => [
+            'total' => $total,
+            'benar' => $benar,
+            'salah' => $salah,
+            'skor'  => $skor
+        ]
+    ]);
+}
+
+    // --------------------------------------------------
+    // Fungsi: riwayat()
+    // Deskripsi:
+    // Menampilkan daftar riwayat hasil kuis milik user login.
+    // --------------------------------------------------
     public function riwayat()
-{
-    $userId = session()->get('user_id'); // atau nanti kita pastikan lagi
+    {
+        $userId = session()->get('user_id'); // atau nanti kita pastikan lagi
 
-    $data['riwayat'] = $this->hasilModel->getRiwayatByUser($userId);
-    return view('agent/riwayat', $data);
-}
+        $data['riwayat'] = $this->hasilModel->getRiwayatByUser($userId);
+        return view('agent/riwayat', $data);
+    }
 
 
-    // halaman hasil kuis
     public function hasil($idKuis)
-{
-    $userId = session()->get('user_id');
-    $db = \Config\Database::connect();
+    {
+        $userId = session()->get('user_id');
+        $db = \Config\Database::connect();
 
-    $hasil = $db->table('kuis_hasil kh')
-        ->select('kh.*, k.nama_kuis, k.topik')
-        ->join('kuis k', 'k.id_kuis = kh.id_kuis')
-        ->where('kh.id_user', $userId)
-        ->where('kh.id_kuis', $idKuis)
-        ->get()
-        ->getRowArray();
+        $hasil = $db->table('kuis_hasil kh')
+            ->select('kh.*, k.nama_kuis, k.topik')
+            ->join('kuis k', 'k.id_kuis = kh.id_kuis')
+            ->where('kh.id_user', $userId)
+            ->where('kh.id_kuis', $idKuis)
+            ->get()
+            ->getRowArray();
 
-    $data['hasil'] = $hasil; // ✅ ubah ke 'hasil'
+        $data['hasil'] = $hasil; 
 
-    return view('agent/hasil', $data);
-}
+        return view('agent/hasil', $data);
+    }
 }

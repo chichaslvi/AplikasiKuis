@@ -49,7 +49,7 @@
     background-color: #e9ecef;
 }
 
-.pilihan.user-benarr {
+.pilihan.user-benar {
     color: #155724;
     background-color: #d4edda;
     border: 1px solid #28a745;
@@ -63,10 +63,11 @@
     font-weight: 600;
 }
 
-.pilihan.benar {
+.pilihan.jawaban-benar {
     color: #155724;
     background-color: #d4edda;
     border: 1px solid #28a745;
+    font-weight: 600;
 }
 
 .back-button {
@@ -97,6 +98,24 @@
     color: #ddd;
     margin-bottom: 30px;
 }
+
+.info-box {
+    background: #e7f3ff;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.info-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.info-item:last-child {
+    margin-bottom: 0;
+}
 </style>
 
 <div class="main-section detail-section text-center">
@@ -104,12 +123,34 @@
     <p class="text-white mb-4"><?= esc($kuis['topik']) ?></p>
 
     <div class="detail-card">
+        <!-- Info Ringkasan -->
+        <div class="info-box">
+            <div class="info-item">
+                <span><strong>Total Soal:</strong></span>
+                <span><?= $hasil['jumlah_soal'] ?></span>
+            </div>
+            <div class="info-item">
+                <span><strong>Jawaban Benar:</strong></span>
+                <span class="text-success"><?= $hasil['jawaban_benar'] ?></span>
+            </div>
+            <div class="info-item">
+                <span><strong>Jawaban Salah:</strong></span>
+                <span class="text-danger"><?= $hasil['jawaban_salah'] ?></span>
+            </div>
+            <div class="info-item">
+                <span><strong>Total Skor:</strong></span>
+                <span class="text-primary"><strong><?= $hasil['total_skor'] ?>%</strong></span>
+            </div>
+        </div>
+
+        <!-- Daftar Soal -->
         <?php foreach ($jawaban as $key => $item): ?>
             <div class="soal-card">
                 <div class="status <?= $item['status'] == 'Benar' ? 'status-benar' : 'status-salah' ?>">
                     <?= $item['status'] == 'Benar' ? '✓' : '✗' ?>
                 </div>
-                <div class="pertanyaan">
+                
+                <div class="pertanyaan mb-3">
                     <strong><?= $key + 1 ?>. <?= esc($item['soal']) ?></strong>
                 </div>
 
@@ -118,16 +159,47 @@
                 foreach($pilihan as $p):
                     $text = $item['pilihan_'.$p] ?? null;
                     if(!$text) continue;
+                    
+                    $huruf = strtoupper($p);
                     $class = 'pilihan';
-
-                    if($text == $item['pilihan_user']) {
-                        $class = $item['status'] == 'Benar' ? 'pilihan user-benarr' : 'pilihan user-salah';
-                    } elseif($item['status'] == 'Salah' && $text == $item['jawaban_benar']) {
-                        $class = 'pilihan benar';
+                    
+                    // Cek apakah ini jawaban user
+                    $isUserAnswer = (strcasecmp($text, $item['jawaban_user']) === 0);
+                    
+                    // Cek apakah ini jawaban benar
+                    $isCorrectAnswer = (strcasecmp($text, $item['jawaban_benar']) === 0);
+                    
+                    // Tentukan kelas CSS
+                    if ($isUserAnswer && $isCorrectAnswer) {
+                        $class = 'pilihan user-benar'; // User menjawab benar
+                    } elseif ($isUserAnswer && !$isCorrectAnswer) {
+                        $class = 'pilihan user-salah'; // User menjawab salah
+                    } elseif (!$isUserAnswer && $isCorrectAnswer) {
+                        $class = 'pilihan jawaban-benar'; // Jawaban benar (bukan pilihan user)
                     }
                 ?>
-                    <div class="<?= $class ?>"><?= strtoupper($p) ?>. <?= esc($text) ?></div>
+                    <div class="<?= $class ?>">
+                        <?= $huruf ?>. <?= esc($text) ?>
+                        <?php if ($isCorrectAnswer): ?>
+                            <small class="float-end text-success">✓ Jawaban Benar</small>
+                        <?php elseif ($isUserAnswer): ?>
+                            <small class="float-end text-danger">✗ Jawaban Anda</small>
+                        <?php endif; ?>
+                    </div>
                 <?php endforeach; ?>
+
+                <!-- Info Jawaban -->
+                <div class="mt-3 p-2 rounded" style="background: #f8f9fa; border: 1px dashed #ccc;">
+                    <small class="text-muted">
+                        <strong>Jawaban Anda:</strong> 
+                        <span class="<?= $item['status'] == 'Benar' ? 'text-success' : 'text-danger' ?>">
+                            "<?= esc($item['jawaban_user'] ?? '-') ?>"
+                        </span>
+                        | 
+                        <strong>Jawaban Benar:</strong> 
+                        <span class="text-success">"<?= esc($item['jawaban_benar'] ?? '-') ?>"</span>
+                    </small>
+                </div>
             </div>
         <?php endforeach; ?>
 

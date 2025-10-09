@@ -98,39 +98,65 @@
   </nav>
 
   <!-- ====== DATA SOAL (backend) ====== -->
-  <?php
-  /** @var array $soalList */
-  $soalList = $soalList ?? [];
-  $questionsArr = [];
-  $no = 1;
-  foreach ($soalList as $item) {
-    $optA = $item['pilihan_a'] ?? null;
-    $optB = $item['pilihan_b'] ?? null;
-    $optC = $item['pilihan_c'] ?? null;
-    $optD = $item['pilihan_d'] ?? null;
-    $optE = $item['pilihan_e'] ?? null;
+<?php
+$questionsArr = [];
+$no = 1;
+foreach ($soalList as $item) {
+    $opts = [
+        'A' => $item['pilihan_a'] ?? null,
+        'B' => $item['pilihan_b'] ?? null,
+        'C' => $item['pilihan_c'] ?? null,
+        'D' => $item['pilihan_d'] ?? null,
+        'E' => $item['pilihan_e'] ?? null,
+    ];
 
+    // Filter null values dan acak urutan pilihan
+    $filteredOpts = array_filter($opts, function($val) { 
+        return $val !== null && trim($val) !== ''; 
+    });
+    
+    $keys = array_keys($filteredOpts);
+    shuffle($keys);
+    
+    $shuffled = [];
+    $newCorrectKey = null;
+    $alpha = range('A', 'E');
+    $i = 0;
+    
+    // Tentukan jawaban benar sebelum diacak
     $jawabanRaw = trim((string)($item['jawaban'] ?? ''));
-    $correctKey = null;
-
+    $correctValue = null;
+    
     if (in_array($jawabanRaw, ['A','B','C','D','E'], true)) {
-      $correctKey = $jawabanRaw;
+        $correctValue = $opts[$jawabanRaw] ?? null;
     } else {
-      $map = ['A'=>$optA,'B'=>$optB,'C'=>$optC,'D'=>$optD,'E'=>$optE];
-      foreach ($map as $key => $val) {
-        if ($val !== null && strcasecmp($jawabanRaw, (string)$val) === 0) {
-          $correctKey = $key; break;
+        foreach ($opts as $key => $val) {
+            if ($val !== null && strcasecmp($jawabanRaw, (string)$val) === 0) {
+                $correctValue = $val;
+                break;
+            }
         }
-      }
     }
-
+    
+    // Acak pilihan
+    foreach ($keys as $oldKey) {
+        $newKey = $alpha[$i++] ?? $oldKey;
+        $shuffled[$newKey] = $filteredOpts[$oldKey];
+        if ($filteredOpts[$oldKey] == $correctValue) {
+            $newCorrectKey = $newKey;
+        }
+    }
+    
     $questionsArr[$no] = [
-      'q' => $item['soal'] ?? '',
-      'options' => ['A'=>$optA,'B'=>$optB,'C'=>$optC,'D'=>$optD,'E'=>$optE],
-      'correct' => $correctKey,
+        'id' => $item['id_soal'], // ✅ JANGAN LUPA INI
+        'q' => $item['soal'] ?? '(Soal tidak tersedia)',
+        'options' => $shuffled,
+        'correct' => $newCorrectKey, // huruf jawaban benar setelah acak
     ];
     $no++;
-  }
+}
+?>
+
   ?>
 
   <!-- Main -->
@@ -262,9 +288,11 @@
             const div = document.createElement("div");
             div.className = "form-check";
             div.innerHTML = `
-              <input class="form-check-input" type="radio" name="q${num}" id="q${num}${key}" value="${key}" ${answers[num]===key?"checked":""}>
-              <label class="form-check-label" for="q${num}${key}">${key}. ${val}</label>
-            `;
+  <input class="form-check-input" type="radio" name="q${num}" id="q${num}${key}"
+         value="${val}" ${answers[num]===val?"checked":""}>
+  <label class="form-check-label" for="q${num}${key}">${key}. ${val}</label>
+`;
+
             optionsContainer.appendChild(div);
           }
         });
@@ -336,38 +364,59 @@
       } catch { return null; }
     }
 
-    // === SUBMIT ke server (DISESUAIKAN) ===
-    async function submitToServer(payload) {
-      const hdr = document.querySelector('meta[name="csrf-header"]').content;
-      const tok = document.querySelector('meta[name="csrf-token"]').content;
+    // === SUBMIT ke server (FIXED) ===
+async function submitToServer(payload) {
+  const hdr = document.querySelector('meta[name="csrf-header"]').content;
+  const tok = document.querySelector('meta[name="csrf-token"]').content;
 
-      const res = await fetch('<?= base_url('agent/kuis/submit'); ?>', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest',
-          [hdr]: tok
-        },
-        body: JSON.stringify(payload),
-        credentials: 'same-origin'
-      });
-
-      if (!res.ok) {
-        const t = await res.text().catch(()=> '');
-        alert('Gagal menyimpan hasil (' + res.status + ').\n' + t);
-        throw new Error('Submit failed ' + res.status);
-      }
-
-      // jika server mengirimkan token baru, simpan ke meta
-      const newHdr = res.headers.get('X-CSRF-HEADER');
-      const newTok = res.headers.get('X-CSRF-TOKEN');
-      if (newHdr && newTok) {
-        document.querySelector('meta[name="csrf-header"]').content = newHdr;
-        document.querySelector('meta[name="csrf-token"]').content  = newTok;
-      }
-
-      return res.json().catch(()=>({ok:true}));
+  // 🛠️ FIX: Convert answers keys dari nomor urut (1,2,3) ke ID soal (280,281,282)
+  const fixedAnswers = {};
+  Object.keys(payload.answers).forEach(nomorUrut => {
+    const soalId = questions[nomorUrut]?.id; // Ambil ID soal sebenarnya
+    if (soalId) {
+      fixedAnswers[soalId] = payload.answers[nomorUrut];
     }
+  });
+
+  const fixedPayload = {
+    id_kuis: payload.id_kuis,
+    answers: fixedAnswers
+  };
+
+  // 🧠 Debug payload yang dikirim
+  console.log("📤 Payload ASLI:", payload);
+  console.log("📤 Payload FIXED:", fixedPayload);
+
+  const res = await fetch('<?= base_url('agent/kuis/submit'); ?>', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+      [hdr]: tok
+    },
+    body: JSON.stringify(fixedPayload),
+    credentials: 'same-origin'
+  });
+
+  if (!res.ok) {
+    const t = await res.text().catch(() => '');
+    alert('Gagal menyimpan hasil (' + res.status + ').\n' + t);
+    throw new Error('Submit failed ' + res.status);
+  }
+
+  // jika server mengirimkan token baru, simpan ke meta
+  const newHdr = res.headers.get('X-CSRF-HEADER');
+  const newTok = res.headers.get('X-CSRF-TOKEN');
+  if (newHdr && newTok) {
+    document.querySelector('meta[name="csrf-header"]').content = newHdr;
+    document.querySelector('meta[name="csrf-token"]').content = newTok;
+  }
+
+  const data = await res.json().catch(() => ({ ok: true }));
+  console.log("📥 Response dari backend:", data);
+
+  return data;
+}
 
     // Tampilkan hasil & simpan
     async function hitungDanTampilkanHasil() {
@@ -378,7 +427,7 @@
       // Hitung hasil
       let benar = 0;
       Object.keys(answers).forEach(no => {
-        if (questions[no] && answers[no] === questions[no].correct) benar++;
+        if (questions[no] && answers[no] === questions[no].options[questions[no].correct]) benar++;
       });
       let total = typeof totalQuestions !== "undefined" ? totalQuestions : Object.keys(questions).length;
       let salah = total - benar;

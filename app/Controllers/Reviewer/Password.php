@@ -2,9 +2,8 @@
 
 namespace App\Controllers\Reviewer;
 
-use App\Controllers\BaseController;
 use App\Models\UserModel;
-
+use App\Controllers\BaseController;
 class Password extends BaseController
 {
     protected $userModel;
@@ -14,16 +13,18 @@ class Password extends BaseController
         $this->userModel = new UserModel();
     }
 
-    // Tampilkan form ganti password
+
+
+    // 🟦 Tampilkan form ganti password
     public function index()
     {
         return view('reviewer/ganti_password');
     }
 
-    // Proses update password
+    // 🟩 Proses update password
     public function update()
     {
-        $userId          = session()->get('user_id'); // user yang sedang login
+        $userId          = session()->get('user_id');
         $currentPassword = $this->request->getPost('current_password');
         $newPassword     = $this->request->getPost('new_password');
         $confirmPassword = $this->request->getPost('confirm_password');

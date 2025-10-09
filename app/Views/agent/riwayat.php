@@ -25,21 +25,42 @@
 
         <?php if (!empty($riwayat)) : ?>
           <?php foreach ($riwayat as $item) : ?>
+            <?php
+            // Cek apakah kuis sudah berakhir
+            $endTime = trim(($item['tanggal'] ?? '') . ' ' . ($item['waktu_selesai'] ?? ''));
+            $kuisEnded = $endTime && strtotime($endTime) < time();
+            ?>
+            
             <div class="card-custom quiz-card mb-3 p-3 d-flex justify-content-between align-items-center">
               <div class="quiz-info">
                 <p class="mb-1 fw-bold"><?= esc($item['nama_kuis']) ?></p>
-                <p class="mb-1 text-secondary">Sub Soal : <?= esc($item['sub_soal'] ?? 'Kuis Peningkatan Mutu') ?></p>
+                <p class="mb-1 text-secondary">Topik : <?= esc($item['topik']) ?></p>
+                <p class="mb-1 text-success">
+                  <i class="bi bi-star me-1"></i>
+                  Skor: <?= $item['total_skor'] ?>%
+                </p>
                 <small class="text-muted">
                   <i class="bi bi-calendar-event me-1"></i>
-                  <?= !empty($item['tanggal_pengerjaan']) ? date('l, d F Y', strtotime($item['tanggal_pengerjaan'])) : '-' ?>
+                  <?= !empty($item['finished_at']) ? date('l, d F Y', strtotime($item['finished_at'])) : 
+                       (!empty($item['tanggal_pengerjaan']) ? date('l, d F Y', strtotime($item['tanggal_pengerjaan'])) : '-') ?>
                   &nbsp;&nbsp;
                   <i class="bi bi-clock me-1"></i>
-                  <?= !empty($item['tanggal_pengerjaan']) ? date('H:i', strtotime($item['tanggal_pengerjaan'])) : '-' ?>
+                  <?= !empty($item['finished_at']) ? date('H:i', strtotime($item['finished_at'])) : 
+                       (!empty($item['tanggal_pengerjaan']) ? date('H:i', strtotime($item['tanggal_pengerjaan'])) : '-') ?>
                 </small>
               </div>
-              <a href="<?= base_url('agent/hasil/'.$item['id_kuis']) ?>" class="btn btn-primary rounded-pill px-4">
-                <i class="bi bi-eye me-1"></i> Lihat Hasil
-              </a>
+              
+              <?php if ($kuisEnded) : ?>
+                <!-- Tampilkan tombol hanya jika kuis sudah berakhir -->
+                <a href="<?= base_url('agent/hasil/detail/'.$item['id_hasil']) ?>" class="btn btn-primary rounded-pill px-4">
+                  <i class="bi bi-eye me-1"></i> Lihat Hasil
+                </a>
+              <?php else : ?>
+                <!-- Tampilkan badge jika kuis masih berlangsung -->
+                <span class="badge bg-warning">
+                  <i class="bi bi-clock me-1"></i> Masih Berlangsung
+                </span>
+              <?php endif; ?>
             </div>
           <?php endforeach; ?>
         <?php else : ?>
@@ -54,8 +75,9 @@
 </div>
 
 <?= $this->endSection() ?>
+
 <style>
-  .card-custom {
+.card-custom {
   background: #fff;
   border-radius: 15px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -90,5 +112,4 @@
   background-color: #007bff;
   border: none;
 }
-
-</style> 
+</style>

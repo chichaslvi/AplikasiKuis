@@ -50,15 +50,25 @@ class KuisHasilModel extends Model
     /**
      * Ambil riwayat pengerjaan kuis berdasarkan user
      */
-   public function getRiwayatByUser($userId)
+// Di HasilModel
+public function getRiwayatByUser($userId)
 {
-    return $this->select('kuis_hasil.id_kuis, kuis_hasil.jumlah_soal, kuis_hasil.total_skor, kuis_hasil.tanggal_pengerjaan, kuis.nama_kuis')
-        ->join('kuis', 'kuis.id_kuis = kuis_hasil.id_kuis')
-        ->where('kuis_hasil.id_user', $userId)
-        ->orderBy('kuis_hasil.tanggal_pengerjaan', 'DESC')
-        ->findAll();
-}
-}
+    return $this->db->table('kuis_hasil h')
+        ->select('h.*, k.nama_kuis, k.topik, k.tanggal, k.waktu_mulai, k.waktu_selesai')
+        ->join('kuis k', 'k.id_kuis = h.id_kuis')
+        ->where('h.id_user', $userId)
+        ->where('h.status', 'finished')
+        ->whereIn('h.id_hasil', function($builder) use ($userId) {
+            return $builder->select('MAX(id_hasil)')
+                          ->from('kuis_hasil')
+                          ->where('id_user', $userId)
+                          ->where('status', 'finished')
+                          ->groupBy('id_kuis');
+        })
+        ->orderBy('h.finished_at', 'DESC')
+        ->get()
+        ->getResultArray();
+}}
 /**
  * Alias untuk kompatibilitas lama
  */

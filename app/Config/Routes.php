@@ -10,8 +10,8 @@ use CodeIgniter\Router\RouteCollection;
 // Default (root URL) diarahkan ke login
 // ==================
 $routes->get('/', 'Auth::login');
-$routes->get('login', 'Auth::login');   // alias biar /login bisa dipakai
-$routes->get('auth/login', 'Auth::login'); // supaya redirect RoleFilter tidak 404
+$routes->get('login', 'Auth::login');   
+$routes->get('auth/login', 'Auth::login'); 
 $routes->post('auth/doLogin', 'Auth::doLogin');
 $routes->get('auth/changePassword', 'Auth::changePassword');
 $routes->post('auth/updatePassword', 'Auth::updatePassword');
@@ -28,10 +28,10 @@ $routes->group('admin', ['filter' => 'rolefilter:admin'], function($routes){
     // Dashboard & General
     // ==================
     $routes->get('dashboard', 'Dashboard::admin');
-    $routes->get('users', 'UserController::index');   // daftar user
-    $routes->get('roles', 'RoleController::index');   // halaman roles
-    $routes->get('reports', 'ReportController::index');        // daftar semua kuis
-    $routes->get('report/detail/(:num)', 'ReportController::detail/$1'); // detail nilai peserta
+    $routes->get('users', 'UserController::index');   
+    $routes->get('roles', 'RoleController::index');   
+    $routes->get('reports', 'ReportController::index');        
+    $routes->get('report/detail/(:num)', 'ReportController::detail/$1'); 
     $routes->get('report/download/(:num)', 'ReportController::download/$1');
 
     // ==================
@@ -125,9 +125,9 @@ $routes->group('reviewer', [
 ], function($routes) {
     $routes->get('dashboard', '\App\Controllers\Dashboard::reviewer');
     // Reviewer
-    $routes->get('ganti-password', 'Password::index');
-    $routes->post('ganti-password/update', 'Password::update');
-
+    
+    $routes->get('password', 'Password::index');
+    $routes->post('ganti_password/update', '\App\Controllers\Reviewer\Password::index');
 
     // Report
     $routes->get('reports', 'ReportController::index');        
@@ -138,7 +138,7 @@ $routes->group('reviewer', [
     $routes->get('kuis', 'KuisController::index');
     $routes->get('kuis/detail/(:num)', 'KuisController::detail/$1');
     $routes->get('kuis/create', 'KuisController::create');
-    $routes->post('kuis/store', 'KuisController::store_kuis');
+    $routes->post('kuis/store_kuis', 'KuisController::store_kuis');
     $routes->get('kuis/edit/(:num)', 'KuisController::edit/$1');
     $routes->post('kuis/update/(:num)', 'KuisController::update/$1');
     $routes->get('kuis/delete/(:num)', 'KuisController::delete/$1');
@@ -146,6 +146,7 @@ $routes->group('reviewer', [
     $routes->get('kuis/upload/(:num)', 'KuisController::upload/$1');
 
 });
+
 
 
 // ==================
@@ -177,7 +178,8 @@ $routes->get('ulangi-quiz', 'Agent::ulangiQuiz'); // alias /ulangi-quiz
 $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); // <-- DITAMBAHKAN: /ulangi-quiz/{id}
 $routes->get('riwayat', 'Agent::riwayat');
 $routes->get('agent/hasil/(:num)', 'Agent::hasil/$1');
-$routes->get('agent/hasil/detail/(:num)', 'Agent::detailHasil/$1');
+$routes->get('agent/hasil/detail/(:num)', 'Agent::detailKuis/$1');
+
 
 // 👉 Tambahkan alias yang kamu minta (dari blok bawah): agent/kuis/{id} → kerjakan kuis
 $routes->get('agent/kuis/(:num)', 'KuisController::kerjakan/$1');

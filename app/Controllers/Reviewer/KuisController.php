@@ -4,24 +4,128 @@ namespace App\Controllers\Reviewer;
 
 use App\Controllers\BaseController;
 use App\Models\KuisModel;
+use App\Models\KuisHasilModel;
 use App\Models\SoalModel;
 use App\Models\KategoriAgentModel;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
+
 class KuisController extends BaseController
 {
     public function __construct()
     {
-        // Paksa semua date() & strtotime() di controller ini pakai WIB
         date_default_timezone_set('Asia/Jakarta');
     }
 
-    /**
-     * Ambil id_kategori agent yang sedang login.
-     * Coba dari session('id_kategori'), kalau tidak ada fallback cari di tabel users pakai session('id_user').
-     */
+    public function mulai(int $idKuis)
+    {
+        $session = session();
+
+        $userId = (int) $session->get('id_user');
+        if (!$userId) {
+            return redirect()->back()->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        $kuisModel  = new KuisModel();
+        $hasilModel = new KuisHasilModel();
+        $db         = \Config\Database::connect();
+
+
+        $kuis = $kuisModel->find($idKuis);
+        if (!$kuis) {
+            return redirect()->back()->with('error', 'Kuis tidak ditemukan.');
+        }
+
+       
+        $now = date('Y-m-d H:i:s');
+        if (!empty($kuis['start_at']) && $now < $kuis['start_at']) {
+            return redirect()->back()->with('error', 'Kuis belum dimulai.');
+        }
+        if (!empty($kuis['end_at']) && $now >= $kuis['end_at']) {
+            return redirect()->back()->with('error', 'Kuis sudah berakhir.');
+        }
+        if (isset($kuis['status']) && strtolower($kuis['status']) !== 'active') {
+            return redirect()->back()->with('error', 'Kuis tidak aktif.');
+        }
+
+        
+        $attemptUsed = $hasilModel->countUserAttempts($userId, $idKuis);
+        $maxAttempts = (int) ($kuis['batas_pengulangan'] ?? 1);
+
+        if ($attemptUsed >= $maxAttempts) {
+            return redirect()->back()->with('error', 'Batas pengerjaan kuis sudah tercapai.');
+        }
+
+
+        try {
+            $db->transStart();
+
+            $attemptUsedTx = $hasilModel->where('id_user', $userId)
+                                        ->where('id_kuis', $idKuis)
+                                        ->countAllResults();
+
+            if ($attemptUsedTx >= $maxAttempts) {
+                $db->transComplete();
+                return redirect()->back()->with('error', 'Batas pengerjaan kuis sudah tercapai.');
+            }
+
+            $hasilModel->insert([
+                'id_user'           => $userId,
+                'id_kuis'           => $idKuis,
+                'status'            => 'in_progress',
+                'started_at'        => $now,
+                'tanggal_pengerjaan'=> date('Y-m-d'),
+                'jumlah_pengerjaan' => $attemptUsedTx + 1,
+            ]);
+
+            $db->transComplete();
+
+            if ($db->transStatus() === false) {
+                return redirect()->back()->with('error', 'Gagal memulai kuis. Coba lagi.');
+            }
+
+        } catch (\Throwable $e) {
+            if ($db->transStatus() === true) {
+                $db->transRollback();
+            }
+            return redirect()->back()->with('error', 'Terjadi kesalahan: '.$e->getMessage());
+        }
+
+
+        return redirect()->to(base_url("kuis/soal/{$idKuis}"));
+    }
+
+
+    public function quota(int $idKuis)
+    {
+        $session  = session();
+        $userId   = (int) $session->get('id_user');
+
+        if (!$userId) {
+            return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $kuisModel  = new KuisModel();
+        $hasilModel = new KuisHasilModel();
+
+        $kuis = $kuisModel->find($idKuis);
+        if (!$kuis) {
+            return $this->response->setJSON(['error' => 'Kuis tidak ditemukan'])->setStatusCode(404);
+        }
+
+        $used = $hasilModel->countUserAttempts($userId, $idKuis);
+        $max  = (int) ($kuis['batas_pengulangan'] ?? 1);
+
+        return $this->response->setJSON([
+            'quiz_id'            => $idKuis,
+            'max_attempts'       => $max,
+            'used_attempts'      => $used,
+            'remaining_attempts' => max(0, $max - $used),
+        ]);
+    }
+
     private function getLoggedInKategoriId(): ?int
     {
         $idKategori = (int) (session()->get('id_kategori') ?? 0);
@@ -39,17 +143,15 @@ class KuisController extends BaseController
         return $row ? (int) $row->id_kategori : null;
     }
 
-    /**
-     * ✅ Turunkan semua kuis active menjadi inactive jika end_at sudah lewat.
-     */
+
     private function autoDeactivate()
     {
         $db = \Config\Database::connect();
 
-        // Gunakan waktu server PHP (yang sudah di-set ke Asia/Jakarta)
+        
         $now = date('Y-m-d H:i:s');
 
-        // Gunakan Query Builder agar lebih stabil dan aman
+        
         $builder = $db->table('kuis');
         $builder->set('status', 'inactive');
         $builder->where('status', 'active');
@@ -59,19 +161,18 @@ class KuisController extends BaseController
 
     public function pollStatus()
     {
-        // Pastikan kuis yang sudah lewat waktu langsung diturunkan di DB
+        
         $this->autoDeactivate();
 
-        // Ambil status & data terbaru
         $kuisModel = new \App\Models\KuisModel();
-        $rows = $kuisModel->getAllKuisWithKategori(); // sudah memanggil updateStatusList()
+        $rows = $kuisModel->getAllKuisWithKategori(); 
 
-        // Kirim data lengkap agar UI bisa patch tanpa reload
+
         $out = [];
         foreach ($rows as $r) {
             $out[] = [
                 'id_kuis'           => (int)($r['id_kuis'] ?? 0),
-                'status'            => strtolower((string)($r['status'] ?? 'draft')), // active/inactive/draft
+                'status'            => strtolower((string)($r['status'] ?? 'draft')), 
                 'nama_kuis'         => (string)($r['nama_kuis'] ?? ''),
                 'topik'             => (string)($r['topik'] ?? ''),
                 'tanggal'           => (string)($r['tanggal'] ?? ''),
@@ -91,16 +192,14 @@ class KuisController extends BaseController
 
     public function index()
     {
-        // ✅ pastikan kuis yang sudah lewat waktu diturunkan
+
         $this->autoDeactivate();
 
-        // 🔁 Ganti ke model agar status sinkron & tidak dioverride
         $kuisModel = new KuisModel();
         $data['kuis'] = $kuisModel->getAllKuisWithKategori();
 
         return view('reviewer/kuis/index', $data);
     }
-    
 
     public function create()
     {
@@ -115,8 +214,7 @@ class KuisController extends BaseController
         $db = \Config\Database::connect();
 
         $fileExcel = $this->request->getFile('file_excel');
-
-        // === Hitung start_at & end_at dari tanggal + waktu ===
+        
         $tanggal      = $this->request->getPost('tanggal_pelaksanaan');
         $waktuMulai   = $this->request->getPost('waktu_mulai');
         $waktuSelesai = $this->request->getPost('waktu_selesai');
@@ -124,10 +222,9 @@ class KuisController extends BaseController
         $startAt = new \DateTime("$tanggal $waktuMulai");
         $endAt   = new \DateTime("$tanggal $waktuSelesai");
         if ($endAt <= $startAt) {
-            // kalau jam selesai <= jam mulai, anggap lewat tengah malam
+            
             $endAt->modify('+1 day');
         }
-        // ================================================
 
         $dataKuis = [
             'nama_kuis'         => $this->request->getPost('nama_kuis'),
@@ -139,7 +236,7 @@ class KuisController extends BaseController
             'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
             'status'            => 'draft',
             'file_excel'        => null,
-            // simpan window waktu:
+            
             'start_at'          => $startAt->format('Y-m-d H:i:s'),
             'end_at'            => $endAt->format('Y-m-d H:i:s'),
         ];
@@ -179,11 +276,11 @@ class KuisController extends BaseController
         $rows = $sheet->toArray();
 
         $soalData = [];
-        for ($i = 1; $i < count($rows); $i++) { // mulai dari baris ke-2
+        for ($i = 1; $i < count($rows); $i++) { 
             $row = $rows[$i];
             if (!empty($row[0])) {
                 $soalData[] = [
-                    'id_kuis'   => $idKuis,           // wajib isi
+                    'id_kuis'   => $idKuis,           
                     'soal'      => $row[0],
                     'pilihan_a' => $row[1] ?? '',
                     'pilihan_b' => $row[2] ?? '',
@@ -225,7 +322,7 @@ class KuisController extends BaseController
         $kuisModel = new KuisModel();
         $db = \Config\Database::connect();
 
-        // === Hitung ulang start_at & end_at ===
+        
         $tanggal      = $this->request->getPost('tanggal');
         $waktuMulai   = $this->request->getPost('waktu_mulai');
         $waktuSelesai = $this->request->getPost('waktu_selesai');
@@ -235,7 +332,7 @@ class KuisController extends BaseController
         if ($endAt <= $startAt) {
             $endAt->modify('+1 day');
         }
-        // =====================================
+        
 
         $data = [
             'nama_kuis'         => $this->request->getPost('nama_kuis'),
@@ -245,13 +342,12 @@ class KuisController extends BaseController
             'waktu_selesai'     => $waktuSelesai,
             'nilai_minimum'     => $this->request->getPost('nilai_minimum'),
             'batas_pengulangan' => $this->request->getPost('batas_pengulangan'),
-            // simpan window waktu:
             'start_at'          => $startAt->format('Y-m-d H:i:s'),
             'end_at'            => $endAt->format('Y-m-d H:i:s'),
         ];
 
         $fileExcel = $this->request->getFile('file_excel');
-        if ($fileExcel && $fileExcel->isValid()) {
+      if ($fileExcel && $fileExcel->isValid()) {
             $newName = $fileExcel->getRandomName();
             $fileExcel->move(WRITEPATH . 'uploads', $newName);
             $data['file_excel'] = $newName;
@@ -361,48 +457,42 @@ class KuisController extends BaseController
     {
         $kuisModel = new \App\Models\KuisModel();
 
-        // 1. Cari kuis berdasarkan ID
+        
         $kuis = $kuisModel->find($id);
         if (!$kuis) {
             return redirect()->to('/reviewer/kuis')
                              ->with('error', 'Kuis tidak ditemukan.');
         }
 
-        // 2. Pastikan status masih draft
+        
         if ($kuis['status'] !== 'draft') {
             return redirect()->to('/reviewer/kuis')
                              ->with('error', 'Kuis ini sudah diupload atau nonaktif.');
         }
 
-        // 3. Jalankan update status melalui model
+        
         if (!$kuisModel->uploadKuis($id)) {
             return redirect()->to('/reviewer/kuis')
                              ->with('error', 'Gagal mengubah status kuis.');
         }
 
-        // 4. Kalau berhasil
+
         return redirect()->to('/reviewer/kuis')
                          ->with('success', 'Kuis berhasil diupload dan status berubah menjadi aktif.');
     }
 
     public function agentIndex()
     {
-        // ✅ pastikan kuis kadaluarsa diturunkan
+        
         $this->autoDeactivate();
 
-        // kategori agent yang login
+        
         $idKategori = $this->getLoggedInKategoriId();
 
         $kuisModel = new KuisModel();
 
-        // kalau tidak ada kategori → jangan tampilkan apa pun
-        if (!$idKategori) {
-            $data['kuis'] = [];
-            return view('agent/dashboard', $data);
-        }
-
-        // ✅ tampilkan hanya kuis untuk kategori ini, berstatus active, dan dalam window waktu
-        $data['kuis'] = $kuisModel->getKuisByKategoriForNow($idKategori);
+        
+        $data['kuis'] = $idKategori ? $kuisModel->getKuisByKategoriForNow($idKategori) : [];
 
         return view('agent/dashboard', $data);
     }
@@ -413,7 +503,7 @@ class KuisController extends BaseController
         $soalModel = new SoalModel();
         $now = date('Y-m-d H:i:s');
 
-        // pastikan kategori cocok dengan agent yang login
+        
         $idKategori = $this->getLoggedInKategoriId();
         if (!$idKategori) {
             throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
@@ -421,7 +511,7 @@ class KuisController extends BaseController
             );
         }
 
-        // Hanya boleh mengerjakan jika kuis ACTIVE, masih dalam window, dan milik kategori agent
+        
         $db = \Config\Database::connect();
         $kuis = $db->table('kuis k')
                    ->select('k.*')
@@ -451,7 +541,7 @@ class KuisController extends BaseController
     {
         $kuisModel = new KuisModel();
 
-        // ambil hanya kuis dengan status active
+        
         $data['kuis'] = $kuisModel->where('status', 'active')
                                   ->orderBy('tanggal', 'DESC')
                                   ->findAll();
@@ -459,43 +549,212 @@ class KuisController extends BaseController
         return view('reviewer/kuis', $data);
     }
 
-    public function soal($id_kuis)
+
+    public function start($idKuis)
     {
-        $kuisModel = new KuisModel();
-        $soalModel = new SoalModel();
-        $now = date('Y-m-d H:i:s');
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
 
-        // pastikan kategori cocok dengan agent yang login
-        $idKategori = $this->getLoggedInKategoriId();
-        if (!$idKategori) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
-                "Kuis tidak ditemukan atau tidak tersedia untuk kategori Anda."
-            );
+        if (!$userId) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Silakan login terlebih dahulu.'])->setStatusCode(401);
         }
 
-        // Pastikan hanya kuis ACTIVE, dalam window, dan sesuai kategori
-        $db = \Config\Database::connect();
-        $kuis = $db->table('kuis k')
-                   ->select('k.*')
-                   ->join('kuis_kategori kk', 'kk.id_kuis = k.id_kuis', 'left')
-                   ->where('k.id_kuis', $id_kuis)
-                   ->where('kk.id_kategori', $idKategori)
-                   ->where('k.status', 'active')
-                   ->where('k.start_at <=', $now)
-                   ->where('k.end_at >',  $now)
-                   ->get()->getRowArray();
+        $db         = \Config\Database::connect();
+        $kuisModel  = new \App\Models\KuisModel();
+        $hasilModel = new \App\Models\KuisHasilModel();
 
+        
+        $kuis = $kuisModel->find($idKuis);
         if (!$kuis) {
-            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound(
-                "Kuis tidak ditemukan atau sudah tidak tersedia."
-            );
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis tidak ditemukan'])->setStatusCode(404);
         }
 
-        $soalList = $soalModel->where('id_kuis', $id_kuis)->findAll();
+        
+        $idKategori = $this->getLoggedInKategoriId();
+        if ($idKategori) {
+            $allowed = $db->table('kuis_kategori')
+                          ->where('id_kuis', $idKuis)
+                          ->where('id_kategori', $idKategori)
+                          ->countAllResults();
+            if ($allowed === 0) {
+                return $this->response->setJSON(['ok'=>false,'error'=>'Kuis tidak tersedia untuk kategori Anda'])->setStatusCode(403);
+            }
+        }
 
+        
+        $now = date('Y-m-d H:i:s');
+        if (strtolower((string)$kuis['status']) !== 'active') {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis tidak aktif'])->setStatusCode(400);
+        }
+        if (!empty($kuis['start_at']) && $now < $kuis['start_at']) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis belum dimulai'])->setStatusCode(400);
+        }
+        if (!empty($kuis['end_at']) && $now >= $kuis['end_at']) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Kuis sudah berakhir'])->setStatusCode(400);
+        }
+
+        
+        $nilaiMax = $hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $idKuis)
+            ->selectMax('nilai')
+            ->get()
+            ->getRowArray();
+        if (!empty($nilaiMax) && (int)$nilaiMax['nilai'] === 100) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Nilai sudah 100. Kuis dianggap selesai.'])->setStatusCode(403);
+        }
+
+        
+        $attemptUsed = $hasilModel
+            ->where('id_user', $userId)
+            ->where('id_kuis', $idKuis)
+            ->countAllResults();
+        $maxAttempts = (int)($kuis['batas_pengulangan'] ?? 1);
+        if ($attemptUsed >= $maxAttempts) {
+            return $this->response->setJSON(['ok' => false, 'error' => 'Batas percobaan sudah habis'])->setStatusCode(403);
+        }
+
+        
+        try {
+            $db->transStart();
+
+            $hasilModel->insert([
+                'id_user'           => $userId,
+                'id_kuis'           => $idKuis,
+                'status'            => 'in_progress',
+                'started_at'        => $now,
+                'tanggal_pengerjaan'=> date('Y-m-d'),
+                'jumlah_pengerjaan' => $attemptUsed + 1,
+            ]);
+            $idHasil = $hasilModel->getInsertID();
+
+            $db->transComplete();
+            if ($db->transStatus() === false) {
+                throw new \Exception('Transaksi gagal');
+            }
+
+            
+            return $this->response->setJSON([
+                'ok'         => true,
+                'message'    => 'Attempt baru dibuat',
+                'attempt_id' => $idHasil,
+                'redirect'   => base_url("quiz/attempt/{$idHasil}")
+            ]);
+
+        } catch (\Throwable $e) {
+            if ($db->transStatus() === true) {
+                $db->transRollback();
+            }
+            return $this->response->setJSON([
+                'ok'    => false,
+                'error' => 'Gagal memulai kuis: '.$e->getMessage(),
+            ])->setStatusCode(500);
+        }
+    }
+
+    
+    private function getAttemptOrFail(int $idHasil, int $userId): array
+    {
+        $db = \Config\Database::connect();
+
+        $attempt = $db->table('kuis_hasil')->where('id', $idHasil)->get()->getRowArray();
+        if (!$attempt) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Attempt tidak ditemukan.');
+        }
+        if ((int)$attempt['id_user'] !== $userId) {
+            
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Attempt tidak ditemukan.');
+        }
+
+        $kuis = $db->table('kuis')->where('id_kuis', $attempt['id_kuis'])->get()->getRowArray();
+        if (!$kuis) {
+            throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('Kuis tidak ditemukan.');
+        }
+
+        return [$attempt, $kuis];
+    }
+
+    
+    private function hitungNilai(int $idKuis, array $jawabanInput): array
+    {
+        $soalModel = new SoalModel();
+        $soalList  = $soalModel->where('id_kuis', $idKuis)->findAll();
+
+        $total = count($soalList);
+        $benar = 0;
+
+        foreach ($soalList as $s) {
+            $sid     = (int)$s['id_soal'];
+            $kunci   = strtolower(trim((string)$s['jawaban']));
+            $jawaban = strtolower(trim((string)($jawabanInput[$sid] ?? '')));
+            if ($kunci !== '' && $jawaban !== '' && $jawaban === $kunci) {
+                $benar++;
+            }
+        }
+
+        $nilai = $total > 0 ? (int) round(($benar / $total) * 100) : 0;
+
+        return [$nilai, $total, $benar];
+    }
+
+    
+    public function attempt($idHasil)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+        if (!$userId) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        [$attempt, $kuis] = $this->getAttemptOrFail((int)$idHasil, $userId);
+
+        
+        $now = date('Y-m-d H:i:s');
+        if (!empty($kuis['end_at']) && $now >= $kuis['end_at']) {
+            
+            if (($attempt['status'] ?? '') === 'in_progress') {
+                return redirect()->to(base_url("quiz/attempt/{$idHasil}/result"))
+                                ->with('warning', 'Waktu kuis telah berakhir.');
+            }
+        }
+
+        
+        $soalModel = new SoalModel();
+        $soalList  = $soalModel->where('id_kuis', $attempt['id_kuis'])->findAll();
+
+        
         return view('agent/soal', [
-            'kuis'     => $kuis,
-            'soalList' => $soalList
+            'kuis'      => $kuis,
+            'soalList'  => $soalList,
+            'attemptId' => (int)$idHasil, 
+        ]);
+    }
+
+    
+    public function result($idHasil)
+    {
+        $session = session();
+        $userId  = (int) ($session->get('id_user') ?? 0);
+        if (!$userId) {
+            return redirect()->to('/login')->with('error', 'Silakan login terlebih dahulu.');
+        }
+
+        [$attempt, $kuis] = $this->getAttemptOrFail((int)$idHasil, $userId);
+
+        if (($attempt['status'] ?? '') === 'in_progress') {
+            
+            return redirect()->to(base_url("quiz/attempt/{$idHasil}"))
+                             ->with('warning', 'Selesaikan kuis terlebih dahulu.');
+        }
+
+        return $this->response->setJSON([
+            'ok'           => true,
+            'attempt_id'   => (int)$idHasil,
+            'quiz'         => ['id'=>(int)$kuis['id_kuis'], 'nama'=>$kuis['nama_kuis'] ?? ''],
+            'status'       => $attempt['status'],
+            'nilai'        => (int)($attempt['nilai'] ?? 0),
+            'started_at'   => $attempt['started_at'] ?? null,
+            'finished_at'  => $attempt['finished_at'] ?? null,
         ]);
     }
 }
