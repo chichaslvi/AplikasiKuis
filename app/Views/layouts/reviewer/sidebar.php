@@ -22,17 +22,87 @@
         <i class="fa-solid fa-chart-column"></i> Report Nilai
       </a>
     </li>
-    <?php $uri = service('uri'); ?>
-<li class="<?= $uri->getSegment(2) === 'password' ? 'active' : '' ?>">
-  <a href="<?= base_url('reviewer/password') ?>">
-    <i class="fa fa-key"></i> Ganti Password
-  </a>
-</li>
+    <li class="<?= $uri->getSegment(2) === 'password' ? 'active' : '' ?>">
+      <a href="<?= base_url('reviewer/password') ?>">
+        <i class="fa fa-key"></i> Ganti Password
+      </a>
+    </li>
     <li>
-      <a href="<?= base_url('/') ?>">
+      <a href="<?= base_url('/auth/logout') ?>">
         <i class="fa-solid fa-right-from-bracket"></i> Logout
       </a>
     </li>
   </ul>
 </div>
 
+<style>
+/* Sidebar tetap ukurannya sama persis dengan sebelumnya */
+.sidebar {
+  width: 250px;
+  background: #0070C0; /* warna sidebar */
+  min-height: 100vh;
+  padding: 20px 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10;
+}
+
+/* Logo section */
+.logo {
+  text-align: center;
+  padding: 0 20px 30px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.logo-img {
+  width: 100% !important;   /* paksa selebar sidebar */
+  height: auto !important;  /* proporsional */
+  display: block;
+  margin: 0 auto 20px auto;
+}
+
+.sidebar .logo h3 {
+  color: white;
+  margin: 0;
+}
+
+/* Menu section */
+.menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu li {
+  margin: 0;
+}
+
+.menu li a {
+  color: white;              /* teks putih */
+  text-decoration: none;     /* hilangkan underline */
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  transition: all 0.3s ease;
+}
+
+.sidebar .menu li a i {
+  color: white;              /* ikon putih */
+  width: 20px;               /* samakan lebar ikon */
+  text-align: center;        /* ikon di tengah kotak */
+  margin-right: 10px;        /* jarak ke teks */
+}
+
+.sidebar .menu li a:hover,
+.sidebar .menu li.active a {
+  background: #005a99;       /* warna hover/active */
+  color: white;
+}
+
+.sidebar .menu li a:hover i,
+.sidebar .menu li.active a i {
+  color: white;
+}
+</style>
