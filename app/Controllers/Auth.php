@@ -41,7 +41,8 @@ class Auth extends BaseController
         }
 
         if (!password_verify($password, $user['password'])) {
-            return redirect()->back()->with('error', 'Password salah');
+           return redirect()->to(' ')->with('error', 'Password salah');
+
         }
 
         // 1. Login pertama kali -> wajib ganti password
@@ -118,7 +119,7 @@ class Auth extends BaseController
 
         session()->remove('temp_user_id');
 
-        return redirect()->to('/')->with('success', 'Password berhasil diubah, silakan login kembali.');
+        return redirect()->to(' ')->with('success', 'Password berhasil diubah, silakan login kembali.');
     }
 
     // =========================

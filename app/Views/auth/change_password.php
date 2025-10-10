@@ -28,7 +28,7 @@
       background: #fff;
     }
 
-    /* Bagian gambar (sekarang di kiri) */
+    
     .left {
       display: flex;
       align-items: center;
@@ -40,9 +40,9 @@
       max-width: 900px;
     }
 
-    /* Bagian form login (sekarang di kanan) */
+    
     .right {
-      padding: 50px;
+      padding: 80px;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -51,19 +51,36 @@
     }
 
     .header-box {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      width: 160%;
-      max-width: 700px;
-      margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 500px;
+  margin-bottom: 40px;
     }
 
-    .right img.logo { 
-      width: 180px; 
-      margin-bottom: 50px; 
-    }
+    .right img.logo, 
+.header-box img {
+  width: 350px;     
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 25px;
+}
 
+.header-box h3 {
+  font-weight: 500;
+  margin-bottom: 10px;
+  color: #333;
+  font-size: 15px;
+  text-align: left;
+}
+
+.header-box .desc {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
     .right h3 { 
       font-weight: 400; 
       margin-bottom: 25px; 
@@ -173,15 +190,14 @@
 </head>
 <body>
   <div class="container">
-    <!-- Kiri: Ilustrasi -->
     <div class="left">
-      <img src="assets/img/ilustrasi.png" alt="Ilustrasi Login">
+       <img src="<?= base_url('assets/img/ilustrasi.png') ?>" alt="ilustrasi Logo">
     </div>
 
-    <!-- Kanan: Form -->
+    
     <div class="right">
       <div class="header-box">
-        <img src="assets/img/Logo.png" alt="Melisa Logo" class="logo">
+       <img src="<?= base_url('assets/img/Logo.png') ?>" alt="Logo">
         <h3>Change Your Default Password</h3>
         <p class="desc">You are required to update your default password. Please create<br>
         a new password with a minimum of 8 unique characters.</p>

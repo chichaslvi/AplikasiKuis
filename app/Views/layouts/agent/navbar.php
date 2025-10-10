@@ -1,9 +1,9 @@
 <!-- app/Views/layouts/agent/navbar.php -->
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
   <div class="container">
-    <a class="navbar-brand fw-bold text-primary" href="<?= base_url('agent/dashboard') ?>">
-      AgentKuis
-    </a>
+    <a class="navbar-brand fw-bold" href="#">
+    <img src="<?= base_url('assets/img/Logo.png'); ?>" alt="Melisa Logo" height="32" class="me-2"> 
+</a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
@@ -26,7 +26,7 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link text-danger" href="<?= base_url('logout') ?>">
+          <a class="nav-link text-danger" href="<?= base_url('/') ?>">
             <i class="fas fa-sign-out-alt"></i> Logout
           </a>
         </li>

@@ -29,7 +29,19 @@
       padding: 70px 20px;
       min-height: calc(100vh - 120px);
     }
-    .main-section h3 { font-weight: 600; letter-spacing: 0.5px; margin-bottom: 25px; }
+    .main-section {
+    flex: 1; /* Membuat konten utama mengambil sisa ruang */
+    padding-bottom: 20px; /* ruang ekstra untuk footer */
+}
+
+footer {
+    background: #ffffff;
+    color: #555;
+    padding: 10px;
+    text-align: center;
+    font-size: 13px;
+    border-top: 1px solid #eee;
+}
 
     /* Header Kuis */
     .quiz-title-box {
@@ -84,8 +96,8 @@
   <nav class="navbar navbar-expand-lg">
     <div class="container">
       <a class="navbar-brand fw-bold" href="#">
-        <img src="<?= base_url('logo.png'); ?>" alt="Melisa Logo" height="32" class="me-2"> Melisa
-      </a>
+    <img src="<?= base_url('assets/img/Logo.png'); ?>" alt="Melisa Logo" height="32" class="me-2"> 
+</a>
       <div class="collapse navbar-collapse justify-content-end">
         <ul class="navbar-nav">
           <li class="nav-item"><a class="nav-link active" href="<?= base_url('dashboard'); ?>">Beranda</a></li>
@@ -155,7 +167,6 @@ foreach ($soalList as $item) {
     ];
     $no++;
 }
-?>
 
   ?>
 
@@ -191,25 +202,29 @@ foreach ($soalList as $item) {
       </div>
 
       <!-- Halaman Hasil -->
-      <div id="resultSection" class="mt-4">
-        <h4 class="fw-bold text-center mb-3">HASIL KUIS</h4>
-        <table class="table table-bordered">
-          <tr><th>Nama Kuis</th><td><?= esc($kuis['nama_kuis']); ?></td></tr>
-          <tr><th>Topik</th><td><?= esc($kuis['topik']); ?></td></tr>
-          <tr><th>Jumlah Soal</th><td id="totalSoal"></td></tr>
-          <tr><th>Jawaban Benar</th><td id="correctCount">0</td></tr>
-          <tr><th>Jawaban Salah</th><td id="wrongCount">0</td></tr>
-          <tr><th>Total Skor</th><td id="finalScore">0</td></tr>
-        </table>
-        <div class="d-flex justify-content-center gap-3">
-          <a id="retryBtn" href="<?= base_url('ulangi-quiz/'.$kuis['id_kuis']); ?>" class="btn btn-primary" style="display:none;">Ulangi Quiz</a>
-          <a href="<?= base_url('dashboard'); ?>" class="btn btn-secondary">Selesai</a>
-        </div>
-      </div>
-    </div>
-  </div>
+<div id="resultSection" class="mt-4">
+  <h4 class="fw-bold text-center mb-3">HASIL KUIS</h4>
+  <table class="table table-bordered">
+    <tr><th>Nama Kuis</th><td><?= esc($kuis['nama_kuis']); ?></td></tr>
+    <tr><th>Topik</th><td><?= esc($kuis['topik']); ?></td></tr>
+    <tr><th>Jumlah Soal</th><td id="totalSoal"></td></tr>
+    <tr><th>Jawaban Benar</th><td id="correctCount">0</td></tr>
+    <tr><th>Jawaban Salah</th><td id="wrongCount">0</td></tr>
+    <tr><th>Total Skor</th><td id="finalScore">0</td></tr>
+  </table>
 
-  <footer>© 2025 Melisa. All Rights Reserved.</footer>
+  <div class="d-flex justify-content-center gap-3">
+    <!-- Tombol Ulangi Quiz (disembunyikan dulu, nanti bisa ditampilkan via JS) -->
+    <a id="retryBtn" href="<?= base_url('agent/ulangi-quiz/'.$kuis['id_kuis']); ?>" class="btn btn-primary" style="display:none;">
+      Ulangi Quiz
+    </a>
+
+    <!-- Tombol Selesai (kembali ke dashboard agent) -->
+    <a href="<?= base_url('agent/dashboard'); ?>" class="btn btn-secondary">
+      Selesai
+    </a>
+  </div>
+</div>
 
   <!-- Modal Konfirmasi -->
   <div class="modal fade" id="confirmFinishModal" tabindex="-1" aria-labelledby="confirmFinishLabel" aria-hidden="true">

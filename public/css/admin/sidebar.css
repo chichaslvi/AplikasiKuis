@@ -20,19 +20,29 @@ body {
   left: 0; 
   top: 0; 
 }
-.logo { 
-  text-align: center; 
-  margin-bottom: 40px; 
+.logo {
+  text-align: center;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
-.logo img { 
-  width: 60px; 
-  margin-bottom: 10px; 
+
+.logo img {
+  width: 200px;            
+  height: 80px;
+  object-fit: contain;      
+  margin-bottom: 8px;
 }
-.logo h2 { 
-  font-size: 22px; 
-  font-weight: 600; 
-  color: #fff; 
+
+.logo h2 {
+  font-size: 22px;
+  font-weight: 600;
+  color: #fff;
+  margin-top: 4px;         
 }
+
 .menu { 
   list-style: none; 
 }

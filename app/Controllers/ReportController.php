@@ -30,9 +30,11 @@ class ReportController extends BaseController
 {
     // Ambil semua kuis kecuali yang status = draft
     $data['kuis'] = $this->kuisModel
-        ->where('status !=', 'draft')
-        ->orderBy('tanggal', 'DESC')
-        ->findAll();
+    ->where('status !=', 'draft')
+    ->orderBy('tanggal', 'DESC')
+    ->orderBy('waktu_mulai', 'DESC')
+    ->findAll();
+
 
     // Ambil semua user yang role = 'team_leader' untuk dropdown filter
     $teamLeaders = $this->UserModel
@@ -52,55 +54,73 @@ class ReportController extends BaseController
 
     $query = $this->hasilModel
     ->select('
-        agent.nama as nama_agent,
-        kategori_agent.nama_kategori as kategori_agent,
-        team_leader.nama as nama_tl,
-        kuis_hasil.total_skor,
-        kuis_hasil.jumlah_pengerjaan
+        agent.nama AS nama_agent,
+        kategori_agent.nama_kategori AS kategori_agent,
+        team_leader.nama AS nama_tl,
+        a.total_skor,
+        a.jumlah_pengerjaan
     ')
-    ->join('users as agent', 'agent.id = kuis_hasil.id_user')
+    ->from('kuis_hasil a')
+    ->join('users AS agent', 'agent.id = a.id_user')
     ->join('kategori_agent', 'kategori_agent.id_kategori = agent.kategori_agent_id', 'left')
     ->join('team_leader', 'team_leader.id = agent.team_leader_id', 'left')
-    ->where('kuis_hasil.id_kuis', $id);
+    ->where('a.id_kuis', $id)
+    ->where('a.id_hasil = (
+        SELECT MAX(b.id_hasil)
+        FROM kuis_hasil b
+        WHERE b.id_user = a.id_user
+          AND b.id_kuis = a.id_kuis
+    )')
+    ->groupBy('a.id_user')  // ✅ Tambahkan baris ini!
+    ->orderBy('agent.nama', 'ASC');
 
-if (!empty($teamLeaderId)) {
-    $query->where('agent.team_leader_id', $teamLeaderId); 
-}
 
+    if (!empty($teamLeaderId)) {
+        $query->where('agent.team_leader_id', $teamLeaderId);
+    }
 
     $peserta = $query->findAll();
 
-   $db = \Config\Database::connect();  
-$teamLeaders = $db->table('team_leader')->get()->getResultArray();
-
+    $teamLeaders = $this->db->table('team_leader')->get()->getResultArray();
 
     $data = [
-        'peserta'      => $peserta,
-        'teamLeaders'  => $teamLeaders,
-        'selectedTL'   => $teamLeaderId,
-        'id_kuis'      => $id,
-        'detail'       => $this->kuisModel->find($id)
+        'peserta' => $peserta,
+        'teamLeaders' => $teamLeaders,
+        'selectedTL' => $teamLeaderId,
+        'id_kuis' => $id,
+        'detail' => $this->kuisModel->find($id)
     ];
 
     return view('admin/report/detail', $data);
 }
+
 
 public function download($id)
 {
     $teamLeaderId = $this->request->getGet('team_leader_id');
 
     $query = $this->hasilModel
-        ->select('
-            agent.nama as nama_agent,
-            kategori_agent.nama_kategori as kategori_agent,
-            team_leader.nama as nama_tl,
-            kuis_hasil.total_skor,
-            kuis_hasil.jumlah_pengerjaan
-        ')
-        ->join('users as agent', 'agent.id = kuis_hasil.id_user')
-        ->join('kategori_agent', 'kategori_agent.id_kategori = agent.kategori_agent_id', 'left')
-        ->join('team_leader', 'team_leader.id = agent.team_leader_id', 'left')
-        ->where('kuis_hasil.id_kuis', $id);
+    ->select('
+        agent.nama AS nama_agent,
+        kategori_agent.nama_kategori AS kategori_agent,
+        team_leader.nama AS nama_tl,
+        a.total_skor,
+        a.jumlah_pengerjaan
+    ')
+    ->from('kuis_hasil a')
+    ->join('users AS agent', 'agent.id = a.id_user')
+    ->join('kategori_agent', 'kategori_agent.id_kategori = agent.kategori_agent_id', 'left')
+    ->join('team_leader', 'team_leader.id = agent.team_leader_id', 'left')
+    ->where('a.id_kuis', $id)
+    ->where('a.id_hasil = (
+        SELECT MAX(b.id_hasil)
+        FROM kuis_hasil b
+        WHERE b.id_user = a.id_user
+          AND b.id_kuis = a.id_kuis
+    )')
+    ->groupBy('a.id_user')  // ✅ Tambahkan baris ini!
+    ->orderBy('agent.nama', 'ASC');
+
 
     if ($teamLeaderId) {
         $query->where('agent.team_leader_id', $teamLeaderId);

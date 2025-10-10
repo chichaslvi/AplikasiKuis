@@ -49,8 +49,8 @@
     }
 
     .left img.logo { 
-      width: 180px; 
-      margin-bottom: 50px; 
+      width: 350px; 
+      margin-bottom: 40px; 
     }
 
     .left h3 { 
@@ -180,7 +180,7 @@
 </head>
 <body>
   <div class="container">
-    <!-- Kiri -->
+   
     <div class="left">
       <div class="header-box">
         <img src="assets/img/Logo.png" alt="Melisa Logo" class="logo">

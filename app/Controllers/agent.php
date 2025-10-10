@@ -352,25 +352,64 @@ class Agent extends BaseController
         return redirect()->to('/agent/riwayat')->with('error', 'Kuis masih berlangsung');
     }
 
-    // Ambil jawaban per soal
+    // === PERBAIKAN: HANYA AMBIL DATA TERAKHIR (JUMLAH PENGERJAAN TERTINGGI) ===
+    
+    // Cari jumlah pengerjaan tertinggi untuk user ini di kuis ini
+    $maxPengerjaan = $this->hasilModel
+        ->where('id_kuis', $hasil['id_kuis'])
+        ->where('id_user', $userId)
+        ->selectMax('jumlah_pengerjaan')
+        ->first();
+    
+    $maxPengerjaan = $maxPengerjaan['jumlah_pengerjaan'] ?? 1;
+    
+    // Ambil hasil dengan jumlah pengerjaan tertinggi
+    $hasilTerakhir = $this->hasilModel
+        ->where('id_kuis', $hasil['id_kuis'])
+        ->where('id_user', $userId)
+        ->where('jumlah_pengerjaan', $maxPengerjaan)
+        ->first();
+    
+    // Update $hasil dengan data terakhir
+    if ($hasilTerakhir) {
+        $hasil = $hasilTerakhir;
+        $id_hasil = $hasilTerakhir['id_hasil']; // Update id_hasil ke yang terakhir
+    }
+
+    // Ambil jawaban per soal untuk hasil terakhir
     $jawaban = $this->db->table('kuis_jawaban kj')
         ->select('kj.*, s.soal, s.pilihan_a, s.pilihan_b, s.pilihan_c, s.pilihan_d, s.pilihan_e')
         ->join('soal_kuis s', 's.id_soal = kj.id_soal')
-        ->where('kj.id_hasil', $id_hasil)
+        ->where('kj.id_hasil', $id_hasil) // Sekarang menggunakan id_hasil terakhir
+        ->where('kj.id_user', $userId)
         ->orderBy('s.id_soal', 'ASC')
         ->get()
         ->getResultArray();
 
+    // Alternatif jika masih ada duplikat (harusnya tidak perlu lagi)
+    if (count($jawaban) > 0) {
+        $filteredJawaban = [];
+        $processedSoal = [];
+        
+        foreach ($jawaban as $item) {
+            $idSoal = $item['id_soal'];
+            if (!in_array($idSoal, $processedSoal)) {
+                $filteredJawaban[] = $item;
+                $processedSoal[] = $idSoal;
+            }
+        }
+        $jawaban = $filteredJawaban;
+    }
+
     $data = [
         'kuis' => $kuis,
-        'hasil' => $hasil,
+        'hasil' => $hasil, // Sekarang berisi data terakhir
         'jawaban' => $jawaban,
         'kuisEnded' => $kuisEnded
     ];
 
     return view('agent/hasil_detail', $data);
 }
-
     
     public function soal($id_kuis = null)
 {
