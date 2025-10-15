@@ -104,7 +104,7 @@
 }
 
 .form-label::before {
-    content: '🔒';
+    content: '';
     margin-right: 10px;
     font-size: 14px;
 }
@@ -320,7 +320,7 @@
         <div class="col-12 col-lg-10">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title mb-0">🔐 Ganti Password</h2>
+                    <h2 class="card-title mb-0"> Ganti Password</h2>
                 </div>
                 <div class="card-body">
                     <?php if (session()->getFlashdata('error')): ?>
@@ -377,11 +377,11 @@
                         
                         <div class="button-container">
                             <button type="submit" class="btn btn-primary">
-                                <span>🔄</span>
+                                <span></span>
                                 <span>Update Password</span>
                             </button>
                             <a href="<?= site_url('reviewer/dashboard') ?>" class="btn btn-secondary">
-                                <span>🏠</span>
+                                <span></span>
                                 <span>Kembali ke Dashboard</span>
                             </a>
                         </div>

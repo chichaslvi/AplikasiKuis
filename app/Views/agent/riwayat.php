@@ -14,7 +14,7 @@
           <div class="profile-info text-start">
             <p><b>Nama</b> <?= esc(session()->get('nama')) ?></p>
             <p><b>NIK</b> <?= esc(session()->get('nik')) ?></p>
-            <p><b>Kategori</b> <?= esc(session()->get('kategori_nama') ?? '-') ?></p>
+           <p><b>Kategori</b> <?= esc(session()->get('kategori_nama')) ?></p>
           </div>
         </div>
       </div>
@@ -36,8 +36,8 @@
                 <p class="mb-1 fw-bold"><?= esc($item['nama_kuis']) ?></p>
                 <p class="mb-1 text-secondary">Topik : <?= esc($item['topik']) ?></p>
                 <p class="mb-1 text-success">
-                  <i class="bi bi-star me-1"></i>
-                  Skor: <?= $item['total_skor'] ?>%
+                  <i class=></i>
+                  Skor: <?= $item['total_skor'] ?>
                 </p>
                 <small class="text-muted">
                   <i class="bi bi-calendar-event me-1"></i>
@@ -52,9 +52,9 @@
               
               <?php if ($kuisEnded) : ?>
                 <!-- Tampilkan tombol hanya jika kuis sudah berakhir -->
-                <a href="<?= base_url('agent/hasil/detail/'.$item['id_hasil']) ?>" class="btn btn-primary rounded-pill px-4">
-                  <i class="bi bi-eye me-1"></i> Lihat Hasil
-                </a>
+                <a href="<?= base_url('agent/hasil/'.$item['id_hasil']) ?>" class="btn btn-primary rounded-pill px-4">
+      <i class=></i> Lihat Hasil
+    </a>
               <?php else : ?>
                 <!-- Tampilkan badge jika kuis masih berlangsung -->
                 <span class="badge bg-warning">

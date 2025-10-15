@@ -378,13 +378,15 @@ class Agent extends BaseController
 
     // Ambil jawaban per soal untuk hasil terakhir
     $jawaban = $this->db->table('kuis_jawaban kj')
-        ->select('kj.*, s.soal, s.pilihan_a, s.pilihan_b, s.pilihan_c, s.pilihan_d, s.pilihan_e')
-        ->join('soal_kuis s', 's.id_soal = kj.id_soal')
-        ->where('kj.id_hasil', $id_hasil) // Sekarang menggunakan id_hasil terakhir
-        ->where('kj.id_user', $userId)
-        ->orderBy('s.id_soal', 'ASC')
-        ->get()
-        ->getResultArray();
+    ->select('kj.*, s.soal, s.pilihan_a, s.pilihan_b, s.pilihan_c, s.pilihan_d, s.pilihan_e')
+    ->join('soal_kuis s', 's.id_soal = kj.id_soal')
+    ->join('kuis_hasil kh', 'kh.id_hasil = kj.id_hasil')
+    ->where('kj.id_hasil', $id_hasil)
+    ->where('kh.id_user', $userId)
+    ->orderBy('s.id_soal', 'ASC')
+    ->get()
+    ->getResultArray();
+
 
     // Alternatif jika masih ada duplikat (harusnya tidak perlu lagi)
     if (count($jawaban) > 0) {
@@ -686,23 +688,42 @@ public function submitKuis()
     }
 
 
-    public function hasil($idKuis)
-    {
-        $userId = session()->get('user_id');
-        $db = \Config\Database::connect();
+    public function hasil($idHasil = null)
+{
+    $userId = session()->get('user_id');
 
-        $hasil = $db->table('kuis_hasil kh')
-            ->select('kh.*, k.nama_kuis, k.topik')
-            ->join('kuis k', 'k.id_kuis = kh.id_kuis')
-            ->where('kh.id_user', $userId)
-            ->where('kh.id_kuis', $idKuis)
-            ->get()
-            ->getRowArray();
-
-        $data['hasil'] = $hasil; 
-
-        return view('agent/hasil', $data);
+    // 🔒 Pastikan parameter ada
+    if (!$idHasil || !is_numeric($idHasil)) {
+        throw \CodeIgniter\Exceptions\PageNotFoundException::forPageNotFound('ID hasil tidak valid atau tidak ditemukan.');
     }
+
+    $db = \Config\Database::connect();
+
+    // 🔍 Ambil hasil berdasarkan id_hasil & user
+    $hasil = $db->table('kuis_hasil kh')
+        ->select('kh.*, k.nama_kuis, k.topik')
+        ->join('kuis k', 'k.id_kuis = kh.id_kuis')
+        ->where('kh.id_user', $userId)
+        ->where('kh.id_hasil', $idHasil)
+        ->get()
+        ->getRowArray();
+
+    // ⚠️ Jika tidak ditemukan, kembalikan ke riwayat
+    if (!$hasil) {
+        return redirect()
+            ->to(base_url('agent/riwayat'))
+            ->with('error', 'Data hasil kuis tidak ditemukan atau tidak sesuai dengan akun Anda.');
+    }
+
+    // 🧠 Pastikan kolom penting tidak null agar tidak error di view
+    $hasil['jumlah_soal'] = $hasil['jumlah_soal'] ?? 0;
+    $hasil['total_skor'] = $hasil['total_skor'] ?? 0;
+
+    // ✅ Kirim data ke view
+    return view('agent/hasil', ['hasil' => $hasil]);
+}
+
+
     
      public function ulangiQuiz($id_kuis = null)
     {

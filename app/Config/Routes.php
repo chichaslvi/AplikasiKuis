@@ -167,6 +167,9 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
     // Riwayat & Ulangi
     $routes->get('riwayat', 'Agent::riwayat');
 
+    $routes->get('hasil/(:num)', 'Agent::hasil/$1');
+    $routes->get('hasil/detail/(:num)', 'Agent::detailKuis/$1');
+
     $routes->get('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1');
     $routes->post('ulangi-quiz/(:num)', 'Agent::ulangiQuiz/$1'); 
 });
@@ -177,8 +180,6 @@ $routes->group('agent', ['filter' => 'rolefilter:agent'], function($routes) {
 $routes->get('dashboard', 'Agent::dashboard'); // alias /dashboard
 $routes->get('soal', 'Agent::soal');           // alias /soal
 $routes->get('riwayat', 'Agent::riwayat');
-$routes->get('agent/hasil/(:num)', 'Agent::hasil/$1');
-$routes->get('agent/hasil/detail/(:num)', 'Agent::detailKuis/$1');
 
 
 // 👉 Tambahkan alias yang kamu minta (dari blok bawah): agent/kuis/{id} → kerjakan kuis
